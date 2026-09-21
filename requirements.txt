@@ -7,3 +7,4 @@ maigret
 exifread
 Pillow
 httpx
+cryptography

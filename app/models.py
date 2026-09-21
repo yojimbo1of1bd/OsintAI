@@ -10,6 +10,7 @@ from typing import List, Optional
 from sqlalchemy import String, Text, DateTime, Boolean, ForeignKey
 from sqlalchemy.orm import relationship, Mapped, mapped_column
 from app.database import Base
+from app.encryption import EncryptedString, EncryptedText
 
 
 class Case(Base):
@@ -30,7 +31,7 @@ class Case(Base):
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     status: Mapped[str] = mapped_column(String(20), nullable=False, default="active")  # active | paused | stopped
     created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
-    notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True, default="")
+    notes: Mapped[Optional[str]] = mapped_column(EncryptedText, nullable=True, default="")
 
     findings: Mapped[List["Finding"]] = relationship(back_populates="case", cascade="all, delete-orphan")
     images: Mapped[List["Image"]] = relationship(back_populates="case", cascade="all, delete-orphan")
@@ -48,9 +49,9 @@ class Finding(Base):
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
     case_id: Mapped[int] = mapped_column(ForeignKey("cases.id"), nullable=False, index=True)
     category: Mapped[str] = mapped_column(String(100), nullable=False)
-    value: Mapped[str] = mapped_column(String(500), nullable=False)
-    source_url: Mapped[str] = mapped_column(Text, nullable=False)
-    notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True, default="")
+    value: Mapped[str] = mapped_column(EncryptedString(500), nullable=False)
+    source_url: Mapped[str] = mapped_column(EncryptedText, nullable=False)
+    notes: Mapped[Optional[str]] = mapped_column(EncryptedText, nullable=True, default="")
     verified: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     added_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
 
@@ -64,8 +65,8 @@ class Image(Base):
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
     case_id: Mapped[int] = mapped_column(ForeignKey("cases.id"), nullable=False, index=True)
     path: Mapped[str] = mapped_column(String(500), nullable=False)
-    source_url: Mapped[str] = mapped_column(Text, nullable=False)
-    exif_json: Mapped[Optional[str]] = mapped_column(Text, nullable=True, default="{}")
+    source_url: Mapped[str] = mapped_column(EncryptedText, nullable=False)
+    exif_json: Mapped[Optional[str]] = mapped_column(EncryptedText, nullable=True, default="{}")
     imported_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
 
     case: Mapped["Case"] = relationship(back_populates="images")
@@ -77,10 +78,10 @@ class Relationship(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
     case_id: Mapped[int] = mapped_column(ForeignKey("cases.id"), nullable=False, index=True)
-    person_a: Mapped[str] = mapped_column(String(255), nullable=False)
+    person_a: Mapped[str] = mapped_column(EncryptedString(255), nullable=False)
     relation: Mapped[str] = mapped_column(String(100), nullable=False)
-    person_b: Mapped[str] = mapped_column(String(255), nullable=False)
-    source_url: Mapped[str] = mapped_column(Text, nullable=False)
+    person_b: Mapped[str] = mapped_column(EncryptedString(255), nullable=False)
+    source_url: Mapped[str] = mapped_column(EncryptedText, nullable=False)
     added_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
 
     case: Mapped["Case"] = relationship(back_populates="relationships")

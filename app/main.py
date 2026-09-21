@@ -26,8 +26,20 @@ from app.routes.scripts import router as scripts_router
 # App setup
 # ---------------------------------------------------------------------------
 
+import sys
+import logging
+
+logger = logging.getLogger(__name__)
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    # Startup: check for dangerous binding
+    if "0.0.0.0" in sys.argv:
+        logger.error("CRITICAL SECURITY RISK: Lodestar is attempting to bind to 0.0.0.0.")
+        logger.error("This exposes sensitive case data to the local network or internet.")
+        logger.error("Please run with host '127.0.0.1' only.")
+        sys.exit(1)
+        
     # Startup: create tables
     init_db()
     yield

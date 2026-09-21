@@ -36,3 +36,6 @@ Desktop.ini
 # Environment variables
 .env
 .env.local
+
+# Encryption Key
+lodestar.key
