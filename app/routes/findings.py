@@ -65,3 +65,38 @@ async def delete_finding(
         db.commit()
         
     return RedirectResponse(url=f"/cases/{case_id}", status_code=303)
+
+from app.correlator import start_maigret_scan
+
+@router.post("/scan")
+async def scan_username(
+    case_id: int,
+    username: str = Form(...),
+    db: Session = Depends(get_db)
+):
+    """Start a background Maigret scan for a username."""
+    case = db.query(Case).filter(Case.id == case_id).first()
+    if not case or case.status != "active":
+        raise HTTPException(status_code=400, detail="Case must be active to run scans")
+        
+    start_maigret_scan(case_id, username.strip())
+    return RedirectResponse(url=f"/cases/{case_id}", status_code=303)
+
+
+@router.post("/{finding_id}/verify")
+async def verify_finding(
+    case_id: int, 
+    finding_id: int, 
+    db: Session = Depends(get_db)
+):
+    """Mark an unverified finding as verified."""
+    finding = db.query(Finding).filter(
+        Finding.id == finding_id, 
+        Finding.case_id == case_id
+    ).first()
+    
+    if finding and not finding.verified:
+        finding.verified = True
+        db.commit()
+        
+    return RedirectResponse(url=f"/cases/{case_id}", status_code=303)

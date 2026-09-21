@@ -22,6 +22,7 @@ import os
 
 from app.database import get_db
 from app.models import Case, Finding
+from app.correlator import cancel_scan
 
 router = APIRouter(prefix="/cases", tags=["cases"])
 
@@ -83,6 +84,7 @@ async def pause_case(case_id: int, db: Session = Depends(get_db)):
     if case and case.status == "active":
         case.status = "paused"
         db.commit()
+        cancel_scan(case_id)
     return RedirectResponse(url="/cases", status_code=303)
 
 
@@ -103,6 +105,7 @@ async def stop_case(case_id: int, db: Session = Depends(get_db)):
     if case and case.status in ("active", "paused"):
         case.status = "stopped"
         db.commit()
+        cancel_scan(case_id)
     return RedirectResponse(url="/cases", status_code=303)
 
 

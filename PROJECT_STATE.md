@@ -11,7 +11,7 @@ Windows-local, passive-OSINT case assistant for Trace-Labs-style missing-persons
 - Custom scripts run only from `scripts/`, only with explicit confirm + logging.
 
 ## Current phase
-Phase 1 & 2 — COMPLETE ✓
+Phase 1, 2, & 3 — COMPLETE ✓
 
 ## Files that exist
 ```
@@ -19,6 +19,7 @@ app/__init__.py       — package marker
 app/main.py           — FastAPI app, routers for cases & findings included
 app/database.py       — SQLAlchemy engine, session, Base, init_db()
 app/models.py         — Case & Finding models
+app/correlator.py     — Maigret username correlation logic
 app/routes/cases.py   — routes for case management
 app/routes/findings.py — routes for finding management
 templates/index.html  — dark-themed landing page
@@ -33,10 +34,10 @@ requirements.txt      — pinned deps (fastapi, uvicorn, sqlalchemy, jinja2, pyt
 ```
 
 ## Last session summary
-Verified and completed Phase 1 (Case Manager Core) and Phase 2 (Finding Logger). Implemented Case and Finding SQLite tables using SQLAlchemy. Added create/pause/resume/stop/delete flows for cases. Added manual finding entry form (enforcing source URLs) and single finding deletion workflow.
+Verified and completed Phase 3 (Username Correlator). Created `app/correlator.py` to wrap `maigret` as an embedded library and land results as unverified Findings. Disabled Tor/I2P scanning and AI features by default. Wired up an endpoint in `app/routes/findings.py` to trigger background scans that can be cancelled.
 
 ## Next step
-Phase 3 per BUILD_PLAN.md: Username Correlator — Wrap Maigret/Sherlock and land results as unverified Findings.
+Phase 4 per BUILD_PLAN.md: Image Importer — Drag-and-drop images, pull EXIF/GPS/timestamp, manual source-URL field, generate reverse-image-search links.
 
 ## Known bugs / open questions
 - Favicon 404 (cosmetic — no favicon.ico yet, will add in polish phase)

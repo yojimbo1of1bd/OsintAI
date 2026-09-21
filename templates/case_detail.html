@@ -95,6 +95,25 @@
         </header>
 
         {% if case.status != "stopped" %}
+        
+        <div style="display: grid; grid-template-columns: 1fr; gap: 1.5rem; margin-top: 1.5rem;">
+            <!-- Username Correlator form -->
+            <section class="card card--form fade-in-up fade-in-up-delay-1">
+                <h2 class="card__title">Username Correlation (Maigret)</h2>
+                <form action="/cases/{{ case.id }}/findings/scan" method="post" class="form" onsubmit="this.querySelector('button').innerText='Scan started...';">
+                    <div style="display: flex; gap: 1rem; align-items: flex-end;">
+                        <div class="form__group" style="flex: 1; margin-bottom: 0;">
+                            <label for="username" class="form__label">Username to scan</label>
+                            <input type="text" id="username" name="username" class="form__input" placeholder="e.g. johndoe123" required autocomplete="off">
+                        </div>
+                        <button type="submit" class="btn btn--primary">
+                            Run Background Scan
+                        </button>
+                    </div>
+                    <p class="text-muted" style="margin-top: 0.5rem; font-size: 0.85rem;">Scans run in the background against top clear-web sites. Pause the case to stop an active scan. Refresh this page to see newly discovered unverified findings.</p>
+                </form>
+            </section>
+
         <!-- Add finding form -->
         <section class="card card--form fade-in-up fade-in-up-delay-1">
             <h2 class="card__title">Log New Finding</h2>
@@ -157,6 +176,7 @@
                 </button>
             </form>
         </section>
+        </div>
         {% endif %}
 
         <!-- Findings list -->
@@ -180,11 +200,13 @@
                     </thead>
                     <tbody>
                         {% for finding in case.findings %}
-                        <tr>
+                        <tr {% if not finding.verified %}style="background-color: rgba(255, 193, 7, 0.05);"{% endif %}>
                             <td>
                                 <span class="badge">{{ finding.category }}</span>
                                 {% if finding.verified %}
                                 <span title="Verified" style="color: var(--success); font-size: 0.8rem; margin-left: 4px;">✓</span>
+                                {% else %}
+                                <span title="Unverified" style="color: var(--warning); font-size: 0.8rem; margin-left: 4px;">?</span>
                                 {% endif %}
                             </td>
                             <td style="font-weight: 500;">{{ finding.value }}</td>
@@ -200,12 +222,19 @@
                                 </div>
                             </td>
                             <td>
-                                <form action="/cases/{{ case.id }}/findings/{{ finding.id }}/delete" method="post" 
-                                      onsubmit="return confirm('Permanently delete this finding? This cannot be undone.')">
-                                    <button type="submit" class="btn btn--small btn--ghost-danger" title="Delete finding">
-                                        🗑
-                                    </button>
-                                </form>
+                                <div style="display: flex; gap: 0.5rem;">
+                                    {% if not finding.verified %}
+                                    <form action="/cases/{{ case.id }}/findings/{{ finding.id }}/verify" method="post">
+                                        <button type="submit" class="btn btn--small btn--primary" title="Verify finding">✓</button>
+                                    </form>
+                                    {% endif %}
+                                    <form action="/cases/{{ case.id }}/findings/{{ finding.id }}/delete" method="post" 
+                                          onsubmit="return confirm('Permanently delete this finding? This cannot be undone.')">
+                                        <button type="submit" class="btn btn--small btn--ghost-danger" title="Delete finding">
+                                            🗑
+                                        </button>
+                                    </form>
+                                </div>
                             </td>
                         </tr>
                         {% endfor %}
