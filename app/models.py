@@ -32,6 +32,7 @@ class Case(Base):
     notes      = Column(Text, nullable=True, default="")
 
     findings   = relationship("Finding", back_populates="case", cascade="all, delete-orphan")
+    images     = relationship("Image", back_populates="case", cascade="all, delete-orphan")
 
 
 class Finding(Base):
@@ -52,3 +53,17 @@ class Finding(Base):
     added_at   = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
 
     case       = relationship("Case", back_populates="findings")
+
+
+class Image(Base):
+    """An imported image with metadata."""
+    __tablename__ = "images"
+
+    id          = Column(Integer, primary_key=True, index=True)
+    case_id     = Column(Integer, ForeignKey("cases.id"), nullable=False, index=True)
+    path        = Column(String(500), nullable=False)
+    source_url  = Column(Text, nullable=False)
+    exif_json   = Column(Text, nullable=True, default="{}")
+    imported_at = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
+
+    case        = relationship("Case", back_populates="images")

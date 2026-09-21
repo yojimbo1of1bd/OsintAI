@@ -177,6 +177,21 @@
             </form>
         </section>
         </div>
+        <!-- Image Importer form -->
+        <section class="card card--form fade-in-up fade-in-up-delay-1" style="margin-top: 1.5rem;">
+            <h2 class="card__title">Image Importer (Drag & Drop)</h2>
+            <form action="/cases/{{ case.id }}/images/upload" method="post" enctype="multipart/form-data" class="form">
+                <div class="form__group">
+                    <label for="image_file" class="form__label">Select Image File</label>
+                    <input type="file" id="image_file" name="file" class="form__input" accept="image/*" required>
+                </div>
+                <div class="form__group">
+                    <label for="image_source_url" class="form__label">Source URL <span class="text-muted">(required)</span></label>
+                    <input type="url" id="image_source_url" name="source_url" class="form__input" placeholder="https://..." required>
+                </div>
+                <button type="submit" class="btn btn--primary">Upload Image & Extract EXIF</button>
+            </form>
+        </section>
         {% endif %}
 
         <!-- Findings list -->
@@ -246,6 +261,51 @@
                 <div class="empty-state__icon">🔍</div>
                 <p class="empty-state__text">No findings logged yet</p>
                 <p class="empty-state__hint text-muted">Use the form above to add your first piece of evidence.</p>
+            </div>
+            {% endif %}
+        </section>
+
+        <!-- Images Gallery -->
+        <section class="fade-in-up fade-in-up-delay-3" style="margin-top: 2rem; margin-bottom: 3rem;">
+            <h2 class="section-title">
+                Images & EXIF
+                <span class="badge">{{ case.images | length }}</span>
+            </h2>
+
+            {% if case.images %}
+            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.5rem; margin-top: 1rem;">
+                {% for image in case.images %}
+                <div class="card" style="padding: 1rem; display: flex; flex-direction: column;">
+                    {% set img_filename = image.path.split('\\')[-1] if '\\' in image.path else image.path.split('/')[-1] %}
+                    <a href="/images/{{ case.id }}/{{ img_filename }}" target="_blank">
+                        <img src="/images/{{ case.id }}/{{ img_filename }}" alt="Uploaded image" style="width: 100%; height: 200px; object-fit: cover; border-radius: 4px; margin-bottom: 1rem;">
+                    </a>
+                    
+                    <div style="margin-bottom: 1rem; flex-grow: 1;">
+                        <strong>Source:</strong> 
+                        <a href="{{ image.source_url }}" target="_blank" class="finding-source" style="font-size: 0.9rem;">Link</a><br>
+                        
+                        <div style="margin-top: 0.5rem; background: var(--bg-dark); padding: 0.5rem; border-radius: 4px; font-family: monospace; font-size: 0.75rem; white-space: pre-wrap; overflow-wrap: break-word;">{{ image.exif_json }}</div>
+                    </div>
+                    
+                    <div style="display: flex; gap: 0.5rem; justify-content: space-between; align-items: center; border-top: 1px solid var(--border); padding-top: 1rem;">
+                        <div style="display: flex; gap: 0.25rem;">
+                            <a href="https://yandex.com/images/search?rpt=imageview&url=" target="_blank" class="btn btn--small btn--primary" title="Yandex (requires public URL or manual upload)">Yandex</a>
+                            <a href="https://lens.google.com/upload" target="_blank" class="btn btn--small btn--primary" title="Google Lens (manual upload)">Google</a>
+                            <a href="https://tineye.com/" target="_blank" class="btn btn--small btn--primary" title="TinEye (manual upload)">TinEye</a>
+                        </div>
+                        <form action="/cases/{{ case.id }}/images/{{ image.id }}/delete" method="post" onsubmit="return confirm('Permanently delete this image?')">
+                            <button type="submit" class="btn btn--small btn--ghost-danger" title="Delete image">🗑</button>
+                        </form>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="empty-state">
+                <div class="empty-state__icon">🖼️</div>
+                <p class="empty-state__text">No images uploaded yet</p>
+                <p class="empty-state__hint text-muted">Upload images to extract EXIF metadata automatically.</p>
             </div>
             {% endif %}
         </section>
