@@ -11,7 +11,7 @@ Windows-local, passive-OSINT case assistant for Trace-Labs-style missing-persons
 - Custom scripts run only from `scripts/`, only with explicit confirm + logging.
 
 ## Current phase
-Phase 1, 2, & 3 — COMPLETE ✓
+Phase 1, 2, 3, 4, & 5 — COMPLETE ✓
 
 ## Files that exist
 ```
@@ -22,22 +22,25 @@ app/models.py         — Case & Finding models
 app/correlator.py     — Maigret username correlation logic
 app/routes/cases.py   — routes for case management
 app/routes/findings.py — routes for finding management
+app/routes/images.py  — routes for image uploads and EXIF extraction
+app/routes/relationships.py — routes for relationship mapper
 templates/index.html  — dark-themed landing page
 templates/cases.html  — case list and creation UI
 templates/case_detail.html — specific case and findings UI
 static/style.css      — design system (CSS custom properties, dark mode)
 data/.gitkeep         — placeholder (DB files gitignored)
+data/images/          — directory for local image storage
 scripts/.gitkeep      — placeholder for custom scripts (Phase 8)
 docs/.gitkeep         — placeholder for documentation
-requirements.txt      — pinned deps (fastapi, uvicorn, sqlalchemy, jinja2, python-multipart)
-.gitignore            — excludes .venv/, data/*.db, __pycache__/
+requirements.txt      — pinned deps (fastapi, uvicorn, sqlalchemy, jinja2, python-multipart, exifread, Pillow, maigret)
+.gitignore            — excludes .venv/, data/*.db, data/images/*, __pycache__/
 ```
 
 ## Last session summary
-Verified and completed Phase 3 (Username Correlator). Created `app/correlator.py` to wrap `maigret` as an embedded library and land results as unverified Findings. Disabled Tor/I2P scanning and AI features by default. Wired up an endpoint in `app/routes/findings.py` to trigger background scans that can be cancelled.
+Verified and completed Phase 5 (Relationship Mapper). Implemented the `Relationship` SQLAlchemy model. Created the `app/routes/relationships.py` router to handle creation and deletion of relationships. Updated `case_detail.html` with an input form (enforcing source URLs), a tabular list view, and an interactive graph visualization using `vis-network`.
 
 ## Next step
-Phase 4 per BUILD_PLAN.md: Image Importer — Drag-and-drop images, pull EXIF/GPS/timestamp, manual source-URL field, generate reverse-image-search links.
+Phase 6 per BUILD_PLAN.md: Data Export — JSON/CSV export of case findings/relationships.
 
 ## Known bugs / open questions
 - Favicon 404 (cosmetic — no favicon.ico yet, will add in polish phase)

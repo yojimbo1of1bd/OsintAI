@@ -14,6 +14,9 @@
     <!-- Styles -->
     <link rel="stylesheet" href="/static/style.css">
     
+    <!-- vis-network -->
+    <script type="text/javascript" src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+    
     <style>
         .case-card__link {
             color: inherit;
@@ -192,6 +195,36 @@
                 <button type="submit" class="btn btn--primary">Upload Image & Extract EXIF</button>
             </form>
         </section>
+
+        <!-- Relationship Mapper form -->
+        <section class="card card--form fade-in-up fade-in-up-delay-1" style="margin-top: 1.5rem;">
+            <h2 class="card__title">Log Relationship</h2>
+            <form action="/cases/{{ case.id }}/relationships/create" method="post" class="form">
+                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem;">
+                    <div class="form__group">
+                        <label for="person_a" class="form__label">Person A</label>
+                        <input type="text" id="person_a" name="person_a" class="form__input" placeholder="e.g. John Doe" required autocomplete="off">
+                    </div>
+                    
+                    <div class="form__group">
+                        <label for="relation" class="form__label">Relation</label>
+                        <input type="text" id="relation" name="relation" class="form__input" placeholder="e.g. brother of" required autocomplete="off">
+                    </div>
+                    
+                    <div class="form__group">
+                        <label for="person_b" class="form__label">Person B</label>
+                        <input type="text" id="person_b" name="person_b" class="form__input" placeholder="e.g. Jane Doe" required autocomplete="off">
+                    </div>
+                </div>
+                
+                <div class="form__group">
+                    <label for="rel_source_url" class="form__label">Source URL <span class="text-muted">(required)</span></label>
+                    <input type="url" id="rel_source_url" name="source_url" class="form__input" placeholder="https://..." required>
+                </div>
+                
+                <button type="submit" class="btn btn--primary">Log Relationship</button>
+            </form>
+        </section>
         {% endif %}
 
         <!-- Findings list -->
@@ -306,6 +339,112 @@
                 <div class="empty-state__icon">🖼️</div>
                 <p class="empty-state__text">No images uploaded yet</p>
                 <p class="empty-state__hint text-muted">Upload images to extract EXIF metadata automatically.</p>
+            </div>
+            {% endif %}
+        <!-- Relationships / Graph -->
+        <section class="fade-in-up fade-in-up-delay-4" style="margin-top: 2rem; margin-bottom: 3rem;">
+            <h2 class="section-title">
+                Relationship Mapper
+                <span class="badge">{{ case.relationships | length }}</span>
+            </h2>
+
+            {% if case.relationships %}
+            <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 1.5rem; margin-top: 1rem;">
+                <div class="card" style="padding: 0;">
+                    <table class="findings-table">
+                        <thead>
+                            <tr>
+                                <th>Relationship</th>
+                                <th>Source</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for rel in case.relationships %}
+                            <tr>
+                                <td>
+                                    <strong>{{ rel.person_a }}</strong> 
+                                    <span class="text-muted">{{ rel.relation }}</span> 
+                                    <strong>{{ rel.person_b }}</strong>
+                                </td>
+                                <td>
+                                    <a href="{{ rel.source_url }}" target="_blank" rel="noopener noreferrer" class="finding-source">Link</a>
+                                </td>
+                                <td>
+                                    <form action="/cases/{{ case.id }}/relationships/{{ rel.id }}/delete" method="post" 
+                                          onsubmit="return confirm('Permanently delete this relationship? This cannot be undone.')">
+                                        <button type="submit" class="btn btn--small btn--ghost-danger" title="Delete relationship">🗑</button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div class="card" style="padding: 1rem;">
+                    <div id="relationship-network" style="width: 100%; height: 400px; border: 1px solid var(--border); border-radius: 4px; background: var(--bg-dark);"></div>
+                </div>
+            </div>
+            
+            <script>
+                document.addEventListener('DOMContentLoaded', function() {
+                    const rawRelationships = [
+                        {% for rel in case.relationships %}
+                        { 
+                            id: {{ rel.id }}, 
+                            fromLabel: "{{ rel.person_a|replace('"', '\\"') }}", 
+                            relation: "{{ rel.relation|replace('"', '\\"') }}", 
+                            toLabel: "{{ rel.person_b|replace('"', '\\"') }}"
+                        },
+                        {% endfor %}
+                    ];
+
+                    const nodeMap = new Map();
+                    let nodeIdCounter = 1;
+                    
+                    rawRelationships.forEach(rel => {
+                        if (!nodeMap.has(rel.fromLabel)) nodeMap.set(rel.fromLabel, nodeIdCounter++);
+                        if (!nodeMap.has(rel.toLabel)) nodeMap.set(rel.toLabel, nodeIdCounter++);
+                    });
+                    
+                    const nodesArray = Array.from(nodeMap.entries()).map(([label, id]) => ({ id, label }));
+                    
+                    const edgesArray = rawRelationships.map(rel => ({
+                        from: nodeMap.get(rel.fromLabel),
+                        to: nodeMap.get(rel.toLabel),
+                        label: rel.relation,
+                        arrows: 'to',
+                        font: { align: 'middle' }
+                    }));
+
+                    const container = document.getElementById('relationship-network');
+                    const data = {
+                        nodes: new vis.DataSet(nodesArray),
+                        edges: new vis.DataSet(edgesArray)
+                    };
+                    const options = {
+                        nodes: {
+                            shape: 'dot',
+                            size: 20,
+                            font: { color: '#ffffff', size: 14 }
+                        },
+                        edges: {
+                            color: { color: '#888888', highlight: '#ffffff' },
+                            font: { color: '#aaaaaa', size: 12, background: 'rgba(0,0,0,0.5)' }
+                        },
+                        physics: {
+                            barnesHut: { gravitationalConstant: -2000, centralGravity: 0.3, springLength: 95 }
+                        }
+                    };
+                    new vis.Network(container, data, options);
+                });
+            </script>
+            {% else %}
+            <div class="empty-state">
+                <div class="empty-state__icon">🔗</div>
+                <p class="empty-state__text">No relationships logged yet</p>
+                <p class="empty-state__hint text-muted">Use the form above to log connections between people.</p>
             </div>
             {% endif %}
         </section>

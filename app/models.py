@@ -33,6 +33,7 @@ class Case(Base):
 
     findings   = relationship("Finding", back_populates="case", cascade="all, delete-orphan")
     images     = relationship("Image", back_populates="case", cascade="all, delete-orphan")
+    relationships = relationship("Relationship", back_populates="case", cascade="all, delete-orphan")
 
 
 class Finding(Base):
@@ -67,3 +68,18 @@ class Image(Base):
     imported_at = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
 
     case        = relationship("Case", back_populates="images")
+
+
+class Relationship(Base):
+    """A discovered relationship between two entities."""
+    __tablename__ = "relationships"
+
+    id          = Column(Integer, primary_key=True, index=True)
+    case_id     = Column(Integer, ForeignKey("cases.id"), nullable=False, index=True)
+    person_a    = Column(String(255), nullable=False)
+    relation    = Column(String(100), nullable=False)
+    person_b    = Column(String(255), nullable=False)
+    source_url  = Column(Text, nullable=False)
+    added_at    = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
+
+    case        = relationship("Case", back_populates="relationships")

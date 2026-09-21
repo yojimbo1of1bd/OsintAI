@@ -16,6 +16,7 @@ from app.database import init_db
 from app.routes.cases import router as cases_router
 from app.routes.findings import router as findings_router
 from app.routes.images import router as images_router
+from app.routes.relationships import router as relationships_router
 
 # ---------------------------------------------------------------------------
 # App setup
@@ -52,6 +53,7 @@ templates = Jinja2Templates(directory=os.path.join(BASE_DIR, "templates"))
 app.include_router(cases_router)
 app.include_router(findings_router)
 app.include_router(images_router)
+app.include_router(relationships_router)
 
 
 # ---------------------------------------------------------------------------
