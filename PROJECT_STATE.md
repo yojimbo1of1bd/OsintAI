@@ -11,15 +11,19 @@ Windows-local, passive-OSINT case assistant for Trace-Labs-style missing-persons
 - Custom scripts run only from `scripts/`, only with explicit confirm + logging.
 
 ## Current phase
-Phase 0 — COMPLETE ✓
+Phase 1 & 2 — COMPLETE ✓
 
 ## Files that exist
 ```
 app/__init__.py       — package marker
-app/main.py           — FastAPI app, GET / (landing), GET /api/health
+app/main.py           — FastAPI app, routers for cases & findings included
 app/database.py       — SQLAlchemy engine, session, Base, init_db()
-app/models.py         — empty, ready for Phase 1 tables
+app/models.py         — Case & Finding models
+app/routes/cases.py   — routes for case management
+app/routes/findings.py — routes for finding management
 templates/index.html  — dark-themed landing page
+templates/cases.html  — case list and creation UI
+templates/case_detail.html — specific case and findings UI
 static/style.css      — design system (CSS custom properties, dark mode)
 data/.gitkeep         — placeholder (DB files gitignored)
 scripts/.gitkeep      — placeholder for custom scripts (Phase 8)
@@ -29,10 +33,10 @@ requirements.txt      — pinned deps (fastapi, uvicorn, sqlalchemy, jinja2, pyt
 ```
 
 ## Last session summary
-Built Phase 0 skeleton. FastAPI app runs at 127.0.0.1:8420. Landing page serves correctly. Health endpoint returns JSON. SQLite DB auto-creates in data/. Fixed Starlette TemplateResponse API change (keyword args required in Starlette 1.6+).
+Verified and completed Phase 1 (Case Manager Core) and Phase 2 (Finding Logger). Implemented Case and Finding SQLite tables using SQLAlchemy. Added create/pause/resume/stop/delete flows for cases. Added manual finding entry form (enforcing source URLs) and single finding deletion workflow.
 
 ## Next step
-Phase 1 per BUILD_PLAN.md: Case Manager Core — create/list/pause/stop/delete cases backed by SQLite.
+Phase 3 per BUILD_PLAN.md: Username Correlator — Wrap Maigret/Sherlock and land results as unverified Findings.
 
 ## Known bugs / open questions
 - Favicon 404 (cosmetic — no favicon.ico yet, will add in polish phase)

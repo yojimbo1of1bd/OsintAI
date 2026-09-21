@@ -13,6 +13,8 @@ from fastapi.templating import Jinja2Templates
 import os
 
 from app.database import init_db
+from app.routes.cases import router as cases_router
+from app.routes.findings import router as findings_router
 
 # ---------------------------------------------------------------------------
 # App setup
@@ -36,6 +38,10 @@ app.mount(
 
 # Jinja2 templates
 templates = Jinja2Templates(directory=os.path.join(BASE_DIR, "templates"))
+
+# Include route modules
+app.include_router(cases_router)
+app.include_router(findings_router)
 
 
 # ---------------------------------------------------------------------------

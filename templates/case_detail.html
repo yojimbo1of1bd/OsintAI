@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Lodestar — Case Details. View and manage findings for an OSINT investigation case.">
+    <title>{{ case.name }} — Lodestar</title>
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+    <!-- Styles -->
+    <link rel="stylesheet" href="/static/style.css">
+    
+    <style>
+        .case-card__link {
+            color: inherit;
+            text-decoration: none;
+        }
+        .case-card__link:hover {
+            text-decoration: underline;
+        }
+        
+        .findings-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+        
+        .findings-table th, .findings-table td {
+            padding: 0.75rem;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+        
+        .findings-table th {
+            font-weight: 600;
+            color: var(--text-muted);
+            font-size: 0.875rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        
+        .findings-table td {
+            vertical-align: top;
+        }
+        
+        .findings-table tr:last-child td {
+            border-bottom: none;
+        }
+        
+        .finding-source {
+            word-break: break-all;
+            color: var(--primary);
+            text-decoration: none;
+        }
+        
+        .finding-source:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <!-- Top nav bar -->
+    <nav class="navbar">
+        <a href="/" class="navbar__brand">
+            <span class="navbar__icon">&#9733;</span>
+            <span class="navbar__title">Lodestar</span>
+        </a>
+        <div class="navbar__links">
+            <a href="/cases" class="navbar__link">Cases</a>
+            <span class="navbar__link navbar__link--active">&gt; {{ case.name }}</span>
+        </div>
+    </nav>
+
+    <div class="container page-content">
+        <!-- Page header -->
+        <header class="page-header fade-in-up">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                <div>
+                    <h1 class="page-header__title">{{ case.name }}</h1>
+                    <p class="page-header__subtitle">
+                        <span class="status-badge status-badge--{{ case.status }}" style="margin-right: 0.5rem;">{{ case.status }}</span>
+                        Created {{ case.created_at.strftime('%b %d, %Y') }}
+                    </p>
+                </div>
+            </div>
+            {% if case.notes %}
+            <div class="card" style="margin-top: 1rem; padding: 1rem;">
+                <p style="margin: 0;">{{ case.notes }}</p>
+            </div>
+            {% endif %}
+        </header>
+
+        {% if case.status != "stopped" %}
+        <!-- Add finding form -->
+        <section class="card card--form fade-in-up fade-in-up-delay-1">
+            <h2 class="card__title">Log New Finding</h2>
+            <form action="/cases/{{ case.id }}/findings/create" method="post" class="form">
+                <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 1rem;">
+                    <div class="form__group">
+                        <label for="category" class="form__label">Category</label>
+                        <select id="category" name="category" class="form__input" required>
+                            <option value="" disabled selected>Select category...</option>
+                            <option value="Basic Subject Info">Basic Subject Info</option>
+                            <option value="Advanced Subject Info">Advanced Subject Info</option>
+                            <option value="Location">Location</option>
+                            <option value="Occupation">Occupation</option>
+                            <option value="Family">Family</option>
+                            <option value="Friends">Friends</option>
+                            <option value="Dark Web">Dark Web</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form__group">
+                        <label for="value" class="form__label">Value (What did you find?)</label>
+                        <input
+                            type="text"
+                            id="value"
+                            name="value"
+                            class="form__input"
+                            placeholder="e.g. johndoe123, 555-0198, works at XYZ Corp"
+                            required
+                            autocomplete="off"
+                        >
+                    </div>
+                </div>
+                
+                <div class="form__group">
+                    <label for="source_url" class="form__label">Source URL <span class="text-muted">(required)</span></label>
+                    <input
+                        type="url"
+                        id="source_url"
+                        name="source_url"
+                        class="form__input"
+                        placeholder="https://..."
+                        required
+                    >
+                </div>
+                
+                <div class="form__group">
+                    <label for="notes" class="form__label">Notes <span class="text-muted">(optional)</span></label>
+                    <textarea
+                        id="notes"
+                        name="notes"
+                        class="form__textarea"
+                        rows="2"
+                        placeholder="Context, why this is relevant, etc..."
+                    ></textarea>
+                </div>
+                
+                <button type="submit" class="btn btn--primary">
+                    Log Finding
+                </button>
+            </form>
+        </section>
+        {% endif %}
+
+        <!-- Findings list -->
+        <section class="fade-in-up fade-in-up-delay-2" style="margin-top: 2rem;">
+            <h2 class="section-title">
+                Findings
+                <span class="badge">{{ case.findings | length }}</span>
+            </h2>
+
+            {% if case.findings %}
+            <div class="card" style="padding: 0;">
+                <table class="findings-table">
+                    <thead>
+                        <tr>
+                            <th>Category</th>
+                            <th>Value</th>
+                            <th>Source</th>
+                            <th>Notes</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for finding in case.findings %}
+                        <tr>
+                            <td>
+                                <span class="badge">{{ finding.category }}</span>
+                                {% if finding.verified %}
+                                <span title="Verified" style="color: var(--success); font-size: 0.8rem; margin-left: 4px;">✓</span>
+                                {% endif %}
+                            </td>
+                            <td style="font-weight: 500;">{{ finding.value }}</td>
+                            <td>
+                                <a href="{{ finding.source_url }}" target="_blank" rel="noopener noreferrer" class="finding-source">
+                                    {{ finding.source_url[:30] }}{% if finding.source_url|length > 30 %}...{% endif %}
+                                </a>
+                            </td>
+                            <td class="text-muted" style="font-size: 0.9rem;">
+                                {{ finding.notes }}
+                                <div style="font-size: 0.75rem; margin-top: 4px;">
+                                    {{ finding.added_at.strftime('%Y-%m-%d %H:%M') }}
+                                </div>
+                            </td>
+                            <td>
+                                <form action="/cases/{{ case.id }}/findings/{{ finding.id }}/delete" method="post" 
+                                      onsubmit="return confirm('Permanently delete this finding? This cannot be undone.')">
+                                    <button type="submit" class="btn btn--small btn--ghost-danger" title="Delete finding">
+                                        🗑
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="empty-state">
+                <div class="empty-state__icon">🔍</div>
+                <p class="empty-state__text">No findings logged yet</p>
+                <p class="empty-state__hint text-muted">Use the form above to add your first piece of evidence.</p>
+            </div>
+            {% endif %}
+        </section>
+    </div>
+</body>
+</html>
