@@ -109,6 +109,110 @@
 
 ---
 
+### Phase 12 — Context Seeding & Case Intake Form
+**Goal:** let the user front-load everything they already know about a subject into a structured intake, so downstream tools have something to work with immediately instead of starting from zero.
+**Steps:**
+1. Add a `CaseContext` model (new table `case_contexts`) with fields: `subject_name`, `known_aliases` (comma-separated), `age_range`, `last_known_location`, `last_seen_date`, `known_associates` (text), `social_handles` (text/JSON), `life_events` (text), `physical_description`, `additional_notes`. All encrypted at rest like other sensitive columns.
+2. Create `app/routes/context.py` with routes: `GET /cases/{id}/context` (view/edit form), `POST /cases/{id}/context` (save/update).
+3. Build `templates/context_intake.html` — a multi-section form (Identity, Location, Social Presence, Associates, Life Events) that saves to the new table.
+4. Add a prominent "Seed Case Context" button on the case detail page header that links to the intake form.
+5. When context is saved, auto-generate initial Findings from structured fields (e.g., each social handle → a "Basic Subject Info" finding with `verified=false`).
+
+**Bug check:** fill out the intake form for a test case; restart the app; confirm all fields survive; confirm auto-generated findings appear in the case view.
+**Done when:** a new case can be front-loaded with 10+ data points in under 2 minutes through the intake form, and those points are visible as unverified findings.
+**Continue prompt:**
+> Continuing Lodestar from PROJECT_STATE.md. Phase 12 (Context Seeding) is done. Starting Phase 13 (Visual Intelligence Map) per BUILD_PLAN.md.
+
+---
+
+### Phase 13 — Visual Intelligence Map
+**Goal:** turn pooled case data into an interactive visual map — family trees, social-handle networks, last-seen locations on a real map, and a timeline of life events — so the investigator can see the whole picture at a glance.
+**Steps:**
+1. Build `templates/case_map.html` — a full-page visual dashboard for a single case, accessible via "View Case Map" button on the case detail page.
+2. **Relationship graph (enhanced):** upgrade the existing vis-network graph to a full-page view with:
+   - Node types: Subject (center, highlighted), Family, Friend, Associate, Unknown
+   - Edge labels from the `relationships` table
+   - Color-coded by relationship type
+   - Click a node → sidebar shows all findings mentioning that person
+3. **Location timeline:** if any findings or images have GPS/location data, plot them on a [Leaflet.js](https://leafletjs.com/) map (via CDN, no API key needed for OpenStreetMap tiles). Each pin shows the finding value, date, and source link.
+4. **Event timeline:** render a vertical timeline (pure HTML/CSS, or vis-timeline via CDN) of key events pulled from `case_contexts.life_events` and chronological findings, sorted by date.
+5. **Social handle grid:** a card grid showing each known handle, which platform it maps to (from correlator results), and whether it's verified.
+6. Wire the map page into the main nav for each case.
+
+**Bug check:** create a case with 3 relationships, 2 images with GPS, and 5 findings across different dates — the map page renders all three visualizations without errors.
+**Done when:** the case map page shows a working relationship graph, a location map with pins, and a timeline — all populated from real case data.
+**Continue prompt:**
+> Continuing Lodestar from PROJECT_STATE.md. Phase 13 (Visual Intelligence Map) is done. Starting Phase 14 (Interactive LLM Assistant) per BUILD_PLAN.md.
+
+---
+
+### Phase 14 — Interactive LLM Assistant (qwen3:8b)
+**Goal:** replace the one-shot triage report with a persistent, step-by-step chat assistant that can read the case data, guide the investigator through OSINT methodology, suggest next actions, and draft flag submissions — all via local Ollama (`qwen3:8b`).
+**Steps:**
+1. Create `app/routes/assistant.py` with:
+   - `GET /cases/{id}/assistant` — renders the chat UI
+   - `POST /cases/{id}/assistant/message` — accepts user message, builds prompt from case context + conversation history + case data, calls Ollama, returns the response
+2. Build `templates/assistant.html` — a chat-style interface:
+   - Message bubbles (user / assistant), auto-scroll
+   - System prompt includes: all case findings, relationships, context data, and the Trace Labs category checklist
+   - "Suggest Next Step" quick-action button that asks the LLM what to investigate next
+   - "Draft Flag" button that asks the LLM to format a specific finding as a CTF flag submission
+   - "Summarize Gaps" button that asks what categories are thin
+3. Conversation history stored in-memory per session (not in DB — these are working notes, not evidence). Optionally save/export a conversation as a text file.
+4. Model selector defaults to `qwen3:8b` but allows override (same pattern as existing triage).
+5. Streaming support: use Ollama's streaming API (`"stream": true`) and Server-Sent Events (SSE) so the response types in real-time instead of waiting for the full generation.
+6. Add a nav link to the assistant from the case detail page.
+
+**Bug check:** open the assistant on a case with 10+ findings; ask it "what should I look into next?"; confirm the response references actual case data and doesn't hallucinate findings that don't exist; confirm streaming works (text appears incrementally).
+**Done when:** the assistant can hold a multi-turn conversation, reference real case data in every response, and the three quick-action buttons all produce useful output.
+**Continue prompt:**
+> Continuing Lodestar from PROJECT_STATE.md. Phase 14 (Interactive LLM Assistant) is done. Starting Phase 15 (Auto-OSINT Pipeline) per BUILD_PLAN.md.
+
+---
+
+### Phase 15 — Auto-OSINT Pipeline
+**Goal:** a single "Run Investigation" button that takes the seeded context and automatically orchestrates the existing tools — username correlator, image metadata, public-domain searches — feeding results back iteratively without manual intervention. The investigator reviews results afterward, not during.
+**Steps:**
+1. Create `app/pipeline.py` — the orchestration engine:
+   - Takes a `case_id`, reads `CaseContext` for that case
+   - **Step 1 — Username sweep:** for each handle in `social_handles`, run the Maigret correlator (reuse `app/correlator.py`). Results auto-saved as unverified findings.
+   - **Step 2 — Public records enrichment:** for the subject name + any known aliases, construct manual-search URLs for public-domain sources (court records via PACER links, voter registration lookup pages, obituary indexes, Wayback Machine snapshots). Save these as findings with category "Advanced Subject Info" and `verified=false`.
+   - **Step 3 — Image batch processing:** if any images already exist for the case, re-extract EXIF if not already done, generate all reverse-image-search URLs, and save them as findings.
+   - **Step 4 — LLM synthesis:** call Ollama with the full updated case data and ask it to: summarize what the pipeline found, flag contradictions, suggest manual follow-ups.
+   - Each step logs progress to a pipeline run log file (same `data/logs/` pattern as the script runner).
+2. Create `app/routes/pipeline.py`:
+   - `POST /cases/{id}/pipeline/run` — kicks off the pipeline as a background task
+   - `GET /cases/{id}/pipeline/status` — returns current step / progress / log
+3. Add a "▶ Run Investigation" button on the case detail page (only shown if context has been seeded and case is active). Requires confirm click per AGENTS.md rules.
+4. Pipeline must respect case status — if the case is paused mid-pipeline, remaining steps are skipped.
+5. **Safety rail:** the pipeline ONLY generates search URLs and runs the correlator. It never visits URLs, never scrapes, never contacts anyone. This is explicit in the code comments and the UI copy.
+
+**Bug check:** seed a test case with 2 handles and a name; run the pipeline; confirm correlator results, generated search URLs, and LLM summary all appear as findings; pause the case mid-pipeline and confirm remaining steps are skipped.
+**Done when:** the pipeline runs end-to-end on a seeded case, produces 20+ unverified findings from automated tools, and the LLM synthesis accurately summarizes what was found.
+**Continue prompt:**
+> Continuing Lodestar from PROJECT_STATE.md. Phase 15 (Auto-OSINT Pipeline) is done. Starting Phase 16 (Integration Polish & Tests) per BUILD_PLAN.md.
+
+---
+
+### Phase 16 — Integration Polish & Tests
+**Goal:** make the new features (Phases 12–15) feel like a cohesive workflow, not bolted-on additions. Fix bugs surfaced during testing, add pytest coverage, update all documentation.
+**Steps:**
+1. **Workflow integration:** on the case detail page, add a clear visual workflow indicator: "1. Seed Context → 2. Run Investigation → 3. Review Map → 4. Chat with Assistant → 5. Export Flags."
+2. **Bug fixes:** address any issues found during Phases 12–15 bug checks.
+3. **Tests:** add pytest tests for:
+   - Context model CRUD
+   - Pipeline step ordering and case-pause interruption
+   - Assistant prompt construction (verify it includes real data, doesn't exceed token limits)
+   - Map data serialization (relationships → vis-network JSON, locations → Leaflet markers)
+4. **README update:** add sections for the new features with screenshots (reuse the Playwright screenshot script).
+5. **Dependency pinning:** freeze new dependencies.
+6. **PROJECT_STATE.md:** update file manifest and completion status.
+
+**Bug check:** fresh clone → `run_lodestar.bat` → create case → seed context → run pipeline → view map → chat with assistant → export → all work without errors.
+**Done when:** the full workflow runs cold-start to export on a clean Windows machine, all new tests pass, and the README documents every feature.
+
+---
+
 ## Appendix: reusable phase template
 
 If you add your own phases later, keep the same shape:

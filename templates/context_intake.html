@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Seed Context — {{ case.name }}</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <!-- Top nav bar -->
+    <nav class="navbar">
+        <a href="/" class="navbar__brand">
+            <span class="navbar__icon">&#9733;</span>
+            <span class="navbar__title">Lodestar</span>
+        </a>
+        <div class="navbar__links">
+            <a href="/cases" class="navbar__link">Cases</a>
+            <a href="/cases/{{ case.id }}" class="navbar__link">{{ case.name }}</a>
+            <span class="navbar__link navbar__link--active">&gt; Seed Context</span>
+        </div>
+    </nav>
+
+    <div class="container page-content">
+        <header class="page-header fade-in-up">
+            <h1 class="page-header__title">Seed Case Context</h1>
+            <p class="page-header__subtitle">Front-load everything you already know about this subject. This data will be used to automatically guide downstream OSINT tools.</p>
+        </header>
+
+        <section class="card card--form fade-in-up fade-in-up-delay-1" style="max-width: 800px; margin: 0 auto;">
+            <form action="/cases/{{ case.id }}/context" method="post" class="form">
+                
+                <h3 style="margin-bottom: 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border);">Identity</h3>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    <div class="form__group">
+                        <label for="subject_name" class="form__label">Subject Full Name</label>
+                        <input type="text" id="subject_name" name="subject_name" class="form__input" placeholder="e.g. John Doe" value="{{ context.subject_name if context else '' }}">
+                    </div>
+                    <div class="form__group">
+                        <label for="age_range" class="form__label">Age / DOB</label>
+                        <input type="text" id="age_range" name="age_range" class="form__input" placeholder="e.g. 35, or born 1988" value="{{ context.age_range if context else '' }}">
+                    </div>
+                </div>
+                
+                <div class="form__group">
+                    <label for="known_aliases" class="form__label">Known Aliases (comma-separated)</label>
+                    <input type="text" id="known_aliases" name="known_aliases" class="form__input" placeholder="e.g. J-Dog, Johnny D" value="{{ context.known_aliases if context else '' }}">
+                </div>
+                
+                <div class="form__group">
+                    <label for="physical_description" class="form__label">Physical Description</label>
+                    <textarea id="physical_description" name="physical_description" class="form__textarea" rows="2" placeholder="Height, weight, tattoos, hair color...">{{ context.physical_description if context else '' }}</textarea>
+                </div>
+
+                <h3 style="margin-top: 2rem; margin-bottom: 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border);">Last Known Details</h3>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    <div class="form__group">
+                        <label for="last_known_location" class="form__label">Last Known Location</label>
+                        <input type="text" id="last_known_location" name="last_known_location" class="form__input" placeholder="e.g. Central Park, NY" value="{{ context.last_known_location if context else '' }}">
+                    </div>
+                    <div class="form__group">
+                        <label for="last_seen_date" class="form__label">Last Seen Date/Time</label>
+                        <input type="text" id="last_seen_date" name="last_seen_date" class="form__input" placeholder="e.g. Oct 12, 2024 at 8 PM" value="{{ context.last_seen_date if context else '' }}">
+                    </div>
+                </div>
+                
+                <h3 style="margin-top: 2rem; margin-bottom: 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border);">Social Presence & Network</h3>
+                <div class="form__group">
+                    <label for="social_handles" class="form__label">Social Handles (comma-separated)</label>
+                    <input type="text" id="social_handles" name="social_handles" class="form__input" placeholder="e.g. johndoe123, j_doe_nyc" value="{{ context.social_handles if context else '' }}">
+                    <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.25rem;">These will be automatically generated as unverified findings for the auto-OSINT pipeline to sweep.</p>
+                </div>
+                
+                <div class="form__group">
+                    <label for="known_associates" class="form__label">Known Associates / Family</label>
+                    <textarea id="known_associates" name="known_associates" class="form__textarea" rows="2" placeholder="e.g. Jane Doe (wife), Bob (coworker)...">{{ context.known_associates if context else '' }}</textarea>
+                </div>
+
+                <h3 style="margin-top: 2rem; margin-bottom: 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border);">Additional Context</h3>
+                <div class="form__group">
+                    <label for="life_events" class="form__label">Key Life Events (Timeline)</label>
+                    <textarea id="life_events" name="life_events" class="form__textarea" rows="3" placeholder="Graduated 2010, moved to NY 2015, changed jobs Oct 2023...">{{ context.life_events if context else '' }}</textarea>
+                </div>
+                
+                <div class="form__group">
+                    <label for="additional_notes" class="form__label">Additional Notes</label>
+                    <textarea id="additional_notes" name="additional_notes" class="form__textarea" rows="3" placeholder="Anything else relevant to the investigation...">{{ context.additional_notes if context else '' }}</textarea>
+                </div>
+
+                <div style="display: flex; gap: 1rem; margin-top: 2rem;">
+                    <button type="submit" class="btn btn--primary">Save Context</button>
+                    <a href="/cases/{{ case.id }}" class="btn btn--outline">Cancel</a>
+                </div>
+            </form>
+        </section>
+    </div>
+</body>
+</html>

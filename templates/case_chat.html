@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Assistant — {{ case.name }}</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/style.css">
+    
+    <!-- Marked.js for markdown rendering -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
+    <style>
+        .chat-container {
+            display: flex;
+            flex-direction: column;
+            height: calc(100vh - 60px);
+            max-width: 900px;
+            margin: 0 auto;
+            border-left: 1px solid var(--border);
+            border-right: 1px solid var(--border);
+            background: var(--bg);
+        }
+
+        .chat-header {
+            padding: 1rem;
+            border-bottom: 1px solid var(--border);
+            background: var(--bg-alt);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .message {
+            display: flex;
+            flex-direction: column;
+            max-width: 85%;
+        }
+
+        .message.user {
+            align-self: flex-end;
+        }
+
+        .message.assistant {
+            align-self: flex-start;
+        }
+
+        .message__bubble {
+            padding: 1rem 1.25rem;
+            border-radius: 12px;
+            line-height: 1.5;
+            word-wrap: break-word;
+        }
+
+        .message.user .message__bubble {
+            background: var(--primary);
+            color: white;
+            border-bottom-right-radius: 2px;
+        }
+
+        .message.assistant .message__bubble {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-bottom-left-radius: 2px;
+        }
+
+        .message__label {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-bottom: 0.25rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .message.user .message__label {
+            text-align: right;
+        }
+
+        /* Markdown styles for assistant */
+        .message.assistant .message__bubble p { margin-bottom: 0.75rem; }
+        .message.assistant .message__bubble p:last-child { margin-bottom: 0; }
+        .message.assistant .message__bubble ul, .message.assistant .message__bubble ol { margin-bottom: 0.75rem; padding-left: 1.5rem; }
+        .message.assistant .message__bubble code { background: var(--bg); padding: 0.2rem 0.4rem; border-radius: 4px; font-family: 'JetBrains Mono', monospace; font-size: 0.85em; }
+
+        .chat-input-area {
+            padding: 1rem;
+            background: var(--bg-card);
+            border-top: 1px solid var(--border);
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .chat-input {
+            flex: 1;
+            background: var(--bg);
+            border: 1px solid var(--border);
+            color: var(--text);
+            padding: 0.75rem 1rem;
+            border-radius: var(--radius);
+            font-family: inherit;
+            resize: none;
+            outline: none;
+            height: 50px;
+        }
+        
+        .chat-input:focus {
+            border-color: var(--primary);
+        }
+
+        .typing-indicator {
+            display: none;
+            align-self: flex-start;
+            background: transparent;
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            font-style: italic;
+            padding: 0 1rem;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <a href="/" class="navbar__brand">
+            <span class="navbar__icon">&#9733;</span>
+            <span class="navbar__title">Lodestar</span>
+        </a>
+        <div class="navbar__links">
+            <a href="/cases" class="navbar__link">Cases</a>
+            <a href="/cases/{{ case.id }}" class="navbar__link">{{ case.name }}</a>
+            <span class="navbar__link navbar__link--active">&gt; AI Assistant</span>
+        </div>
+    </nav>
+
+    <div class="chat-container">
+        <div class="chat-header">
+            <div>
+                <h2 style="font-size: 1.1rem; margin: 0;">Interactive AI Assistant</h2>
+                <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.25rem;">
+                    Local Model: qwen3:8b (via Ollama)
+                </div>
+            </div>
+            <button class="btn btn--outline" id="clear-btn" style="padding: 0.3rem 0.75rem; font-size: 0.85rem;">Clear Chat</button>
+        </div>
+
+        <div class="chat-messages" id="chat-messages">
+            <div class="message assistant fade-in-up">
+                <div class="message__label">Lodestar AI</div>
+                <div class="message__bubble">
+                    Hello. I am loaded with the complete context, relationships, and findings for <strong>{{ case.name }}</strong>. 
+                    <br><br>
+                    How can I assist your investigation? You can ask me to summarize timelines, spot contradictions, or suggest next steps.
+                </div>
+            </div>
+        </div>
+        
+        <div class="typing-indicator" id="typing-indicator">
+            Lodestar is analyzing...
+        </div>
+
+        <div class="chat-input-area">
+            <textarea class="chat-input" id="chat-input" placeholder="Ask about the case... (Press Enter to send, Shift+Enter for new line)" rows="1"></textarea>
+            <button class="btn btn--primary" id="send-btn" style="height: 50px; align-self: flex-end;">Send</button>
+        </div>
+    </div>
+
+    <script>
+        const caseId = {{ case.id }};
+        const chatMessages = document.getElementById('chat-messages');
+        const chatInput = document.getElementById('chat-input');
+        const sendBtn = document.getElementById('send-btn');
+        const clearBtn = document.getElementById('clear-btn');
+        const typingIndicator = document.getElementById('typing-indicator');
+
+        // We only maintain the user and assistant turns for history, 
+        // the backend prepends the system prompt automatically per request.
+        let conversationHistory = [];
+
+        function appendMessage(role, content) {
+            const wrapper = document.createElement('div');
+            wrapper.className = `message ${role} fade-in-up`;
+            
+            const label = document.createElement('div');
+            label.className = 'message__label';
+            label.textContent = role === 'user' ? 'You' : 'Lodestar AI';
+            
+            const bubble = document.createElement('div');
+            bubble.className = 'message__bubble';
+            
+            if (role === 'assistant') {
+                bubble.innerHTML = marked.parse(content);
+            } else {
+                bubble.textContent = content;
+            }
+            
+            wrapper.appendChild(label);
+            wrapper.appendChild(bubble);
+            chatMessages.appendChild(wrapper);
+            
+            // Auto scroll to bottom
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        async function sendMessage() {
+            const text = chatInput.value.trim();
+            if (!text) return;
+            
+            // UI Update
+            appendMessage('user', text);
+            chatInput.value = '';
+            chatInput.style.height = '50px';
+            typingIndicator.style.display = 'block';
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+            
+            // Update local state
+            conversationHistory.push({ role: 'user', content: text });
+            
+            try {
+                const response = await fetch(`/cases/${caseId}/chat/message`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        messages: conversationHistory,
+                        model: "qwen3:8b"
+                    })
+                });
+                
+                typingIndicator.style.display = 'none';
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    const reply = data.message;
+                    appendMessage('assistant', reply);
+                    conversationHistory.push({ role: 'assistant', content: reply });
+                } else {
+                    const data = await response.json();
+                    appendMessage('assistant', `**Error:** ${data.error || 'Failed to connect to AI.'}`);
+                    conversationHistory.pop(); // remove user message from history so they can retry
+                }
+            } catch (err) {
+                typingIndicator.style.display = 'none';
+                appendMessage('assistant', `**Network Error:** Could not reach the server.`);
+                conversationHistory.pop();
+            }
+        }
+
+        sendBtn.addEventListener('click', sendMessage);
+        
+        chatInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        });
+
+        // Auto-resize textarea
+        chatInput.addEventListener('input', function() {
+            this.style.height = '50px';
+            this.style.height = (this.scrollHeight) + 'px';
+            if (parseInt(this.style.height) > 150) {
+                this.style.height = '150px';
+                this.style.overflowY = 'auto';
+            } else {
+                this.style.overflowY = 'hidden';
+            }
+        });
+
+        clearBtn.addEventListener('click', () => {
+            // Keep the greeting
+            const greeting = chatMessages.firstElementChild.outerHTML;
+            chatMessages.innerHTML = greeting;
+            conversationHistory = [];
+        });
+    </script>
+</body>
+</html>

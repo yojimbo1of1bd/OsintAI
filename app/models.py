@@ -36,6 +36,31 @@ class Case(Base):
     findings: Mapped[List["Finding"]] = relationship(back_populates="case", cascade="all, delete-orphan")
     images: Mapped[List["Image"]] = relationship(back_populates="case", cascade="all, delete-orphan")
     relationships: Mapped[List["Relationship"]] = relationship(back_populates="case", cascade="all, delete-orphan")
+    context: Mapped[Optional["CaseContext"]] = relationship(back_populates="case", cascade="all, delete-orphan", uselist=False)
+
+
+class CaseContext(Base):
+    """Initial seeded context for an investigation."""
+    __tablename__ = "case_contexts"
+
+    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    case_id: Mapped[int] = mapped_column(ForeignKey("cases.id"), nullable=False, unique=True, index=True)
+    
+    subject_name: Mapped[Optional[str]] = mapped_column(EncryptedString(255), nullable=True)
+    known_aliases: Mapped[Optional[str]] = mapped_column(EncryptedString(500), nullable=True)
+    age_range: Mapped[Optional[str]] = mapped_column(EncryptedString(100), nullable=True)
+    last_known_location: Mapped[Optional[str]] = mapped_column(EncryptedString(500), nullable=True)
+    last_seen_date: Mapped[Optional[str]] = mapped_column(EncryptedString(100), nullable=True)
+    
+    known_associates: Mapped[Optional[str]] = mapped_column(EncryptedText, nullable=True)
+    social_handles: Mapped[Optional[str]] = mapped_column(EncryptedText, nullable=True)
+    life_events: Mapped[Optional[str]] = mapped_column(EncryptedText, nullable=True)
+    physical_description: Mapped[Optional[str]] = mapped_column(EncryptedText, nullable=True)
+    additional_notes: Mapped[Optional[str]] = mapped_column(EncryptedText, nullable=True)
+    
+    updated_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
+
+    case: Mapped["Case"] = relationship(back_populates="context")
 
 
 class Finding(Base):

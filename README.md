@@ -110,20 +110,30 @@ for the CTF platform
 ## 6. Modules
 
 1. **Case Manager** — create / pause / stop / delete; every other module checks status first, so pausing actually halts in-flight work, not just the UI.
-2. **Finding Logger** — the core manual-entry workflow everything else feeds into.
-3. **Username Correlator** — wraps `soxoj/maigret` (30k+ GitHub stars, 3000+ sites) and/or `sherlock-project/sherlock`. Run in default clear-web mode only.
-4. **Image Importer** — drag-and-drop images you've already saved; extracts EXIF/GPS/timestamp; generates (doesn't auto-run) reverse-image-search links for Yandex/Google/TinEye.
-5. **Relationship Mapper** — manual graph builder.
-6. **LLM Triage Assistant** — local Ollama call over that case's findings only (not the whole DB — keeps it fast and keeps the prompt small); summarizes, flags gaps against the Trace Labs categories below, drafts submission text you review before it goes anywhere.
-7. **Exporter** — formats a case into the flag-submission shape.
-8. **Custom Script Runner** — your own read-only OSINT scripts, run only from a fixed `scripts/` folder, gated by an explicit confirm click per run, full stdout/stderr logging, case-status-aware (a paused case can't launch a script). 
-9. **Encryption / Backup Layer** — at-rest DB encryption via Fernet, local-only binding (`127.0.0.1`, never `0.0.0.0`), encrypted export scripts, and `secure_delete` PRAGMA enabled.
+2. **Context Seeding** — front-load case details (aliases, age, last known location, associates) so downstream tools have immediate context.
+3. **Finding Logger** — the core manual-entry workflow everything else feeds into.
+4. **Auto-OSINT Pipeline** — an orchestration engine that takes seeded context and orchestrates the username correlator, image metadata extraction, and public-domain search link generation. Includes an LLM synthesis step.
+5. **Username Correlator** — wraps `soxoj/maigret` (30k+ GitHub stars, 3000+ sites) and/or `sherlock-project/sherlock`. Run in default clear-web mode only.
+6. **Image Importer** — drag-and-drop images you've already saved; extracts EXIF/GPS/timestamp; generates (doesn't auto-run) reverse-image-search links for Yandex/Google/TinEye.
+7. **Visual Intelligence Map** — turns pooled case data into an interactive visual dashboard (relationship graph, Leaflet map with GPS pins, chronological event timeline).
+8. **Interactive LLM Assistant** — a persistent chat assistant (using `qwen3:8b` via Ollama) that reads the case data to guide OSINT methodology, suggest next steps, and draft flag submissions.
+9. **Exporter** — formats a case into the flag-submission shape.
+10. **Custom Script Runner** — your own read-only OSINT scripts, run only from a fixed `scripts/` folder, gated by an explicit confirm click per run, full stdout/stderr logging, case-status-aware (a paused case can't launch a script). 
+11. **Encryption / Backup Layer** — at-rest DB encryption via Fernet, local-only binding (`127.0.0.1`, never `0.0.0.0`), encrypted export scripts, and `secure_delete` PRAGMA enabled.
 
 ## 7. Trace Labs flag categories (what the LLM triage prompt targets)
 
 Friends · Family · Occupation · Basic Subject Info · Advanced Subject Info · Location. Some past events have also listed a Dark Web category — Lodestar surfaces that as a manual-research reminder only, never as an automated action, given the legal and personal-safety complexity of that terrain.
 
-## 8. Backup & Restore
+## 8. Workflow Example
+
+1. **Seed Context:** Start by filling out the Case Context form with known aliases, physical descriptions, and social handles.
+2. **Run Pipeline:** Click "Run Investigation" to trigger the automated Auto-OSINT Pipeline. It sweeps usernames, pulls metadata, and synthesizes findings via LLM.
+3. **Review Map:** Open the Map to see relationships, location pins, and the chronological timeline.
+4. **Talk to AI:** Use the Chat Assistant to ask for next steps or draft CTF flags based on the accumulated context.
+5. **Export:** Export your flags to CSV or TXT.
+
+## 9. Backup & Restore
 
 To take an encrypted backup of your case database, you can run:
 ```bat
@@ -133,6 +143,6 @@ This produces `data/lodestar.db.enc`, which is useless without `lodestar.key`.
 
 To restore, use `scripts\decrypt_backup.py` and then replace `lodestar.db` with the decrypted file. 
 
-## 9. A note on legality
+## 10. A note on legality
 
 This isn't legal advice — none of the above substitutes for actually reading whatever rules the specific CTF or org gives you, and laws on computer access and data scraping vary by jurisdiction. When in doubt, the passive/no-contact/no-bypass line above is the conservative default; stay on that side of it.

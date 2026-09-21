@@ -86,12 +86,29 @@
                     <h1 class="page-header__title">{{ case.name }}</h1>
                     <p class="page-header__subtitle">
                         <span class="status-badge status-badge--{{ case.status }}" style="margin-right: 0.5rem;">{{ case.status }}</span>
+                    </p>
+                    <p style="margin: 0.5rem 0 0 0; color: var(--text-muted); font-size: 0.85rem;">
                         Created {{ case.created_at.strftime('%b %d, %Y') }}
                     </p>
                 </div>
-                <div style="display: flex; gap: 0.5rem;">
-                    <a href="/cases/{{ case.id }}/export/csv" class="btn btn--outline" download>Export CSV</a>
-                    <a href="/cases/{{ case.id }}/export/txt" class="btn btn--outline" download>Export TXT</a>
+                <div style="flex-basis: 100%; margin-top: 1rem; padding: 1rem; background: var(--bg-card-hover); border-radius: 8px;">
+                    <p style="margin: 0 0 0.5rem 0; font-size: 0.85rem; color: var(--text-muted); font-weight: bold; text-transform: uppercase;">Investigation Workflow</p>
+                    <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center;">
+                        <a href="/cases/{{ case.id }}/context" class="btn btn--outline" style="font-size: 0.8rem;">1. Seed Context</a>
+                        <span style="color: var(--text-muted);">→</span>
+                        {% if case.status == 'active' %}
+                        <button class="btn btn--primary" id="btn-run-pipeline" style="background-color: #6366f1; border-color: #4f46e5; font-size: 0.8rem;">2. Run Pipeline</button>
+                        {% endif %}
+                        <span style="color: var(--text-muted);">→</span>
+                        <a href="/cases/{{ case.id }}/map" class="btn btn--primary" style="font-size: 0.8rem;">3. Review Map</a>
+                        <span style="color: var(--text-muted);">→</span>
+                        <a href="/cases/{{ case.id }}/chat" class="btn btn--primary" style="background-color: #10b981; border-color: #059669; font-size: 0.8rem;">4. Talk to AI</a>
+                        <span style="color: var(--text-muted);">→</span>
+                        <div style="display: flex; gap: 0.25rem;">
+                            <a href="/cases/{{ case.id }}/export/csv" class="btn btn--outline" style="font-size: 0.8rem;" download>5. Export CSV</a>
+                            <a href="/cases/{{ case.id }}/export/txt" class="btn btn--outline" style="font-size: 0.8rem;" download>TXT</a>
+                        </div>
+                    </div>
                 </div>
             </div>
             {% if case.notes %}
@@ -511,10 +528,93 @@
             </div>
             {% endif %}
         </section>
+        <!-- Pipeline Status Modal -->
+        <div id="modal-pipeline" class="modal">
+            <div class="modal__content" style="max-width: 800px; width: 90%;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                    <h3 style="margin: 0;">Auto-OSINT Pipeline</h3>
+                    <span class="modal__close" id="close-pipeline">&times;</span>
+                </div>
+                
+                <div style="margin-bottom: 1rem;">
+                    <span id="pipeline-status-badge" style="padding: 0.25rem 0.5rem; background: var(--warning); color: #fff; border-radius: 4px; font-size: 0.85rem; font-weight: 600;">Status</span>
+                    <span id="pipeline-status-text" style="margin-left: 0.5rem; font-size: 0.9rem; color: var(--text-muted);"></span>
+                </div>
+
+                <div class="form__group">
+                    <label class="form__label">Pipeline Log</label>
+                    <textarea id="pipeline-log" class="form__textarea" rows="15" readonly style="font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; background: #000; color: #0f0; border-color: #333;"></textarea>
+                </div>
+            </div>
+        </div>
+
     </div>
 
-    <!-- Triage Script -->
+    <!-- EXIF Modal JS -->
     <script>
+        // ... (Keep existing modal logic) ...
+        
+        // Pipeline UI Logic
+        const btnRunPipeline = document.getElementById('btn-run-pipeline');
+        const modalPipeline = document.getElementById('modal-pipeline');
+        const closePipeline = document.getElementById('close-pipeline');
+        const pipelineLog = document.getElementById('pipeline-log');
+        const pipelineStatusBadge = document.getElementById('pipeline-status-badge');
+        const pipelineStatusText = document.getElementById('pipeline-status-text');
+        let pipelinePollInterval = null;
+
+        function updatePipelineStatus() {
+            fetch(`/cases/{{ case.id }}/pipeline/status`)
+                .then(r => r.json())
+                .then(data => {
+                    pipelineLog.value = data.log || "No log generated yet.";
+                    pipelineLog.scrollTop = pipelineLog.scrollHeight;
+                    
+                    pipelineStatusText.textContent = data.status;
+                    
+                    if (data.is_running) {
+                        pipelineStatusBadge.textContent = "RUNNING";
+                        pipelineStatusBadge.style.background = "var(--warning)";
+                    } else {
+                        pipelineStatusBadge.textContent = "IDLE";
+                        pipelineStatusBadge.style.background = "var(--primary)";
+                        if (pipelinePollInterval) {
+                            clearInterval(pipelinePollInterval);
+                            pipelinePollInterval = null;
+                        }
+                    }
+                });
+        }
+
+        if (btnRunPipeline) {
+            btnRunPipeline.addEventListener('click', () => {
+                if(confirm("Start the Auto-OSINT Pipeline? This will run the correlator and LLM synthesis in the background based on your seeded context.\n\nNOTE: This will only gather public information and generate URLs. It will NOT scrape restricted platforms or contact anyone.")) {
+                    fetch(`/cases/{{ case.id }}/pipeline/run`, { method: 'POST' })
+                        .then(r => {
+                            if(r.ok) {
+                                modalPipeline.style.display = 'block';
+                                updatePipelineStatus();
+                                pipelinePollInterval = setInterval(updatePipelineStatus, 2000);
+                            } else {
+                                r.json().then(err => alert("Error: " + err.message));
+                            }
+                        });
+                }
+            });
+        }
+        
+        closePipeline.addEventListener('click', () => {
+            modalPipeline.style.display = 'none';
+            if (pipelinePollInterval) {
+                clearInterval(pipelinePollInterval);
+                pipelinePollInterval = null;
+            }
+            // Optional: refresh page to show new findings
+            window.location.reload();
+        });
+
+        // Add EXIF JS here to not break previous scripts...
+
         document.addEventListener('DOMContentLoaded', function() {
             const btnTriage = document.getElementById('btn-triage');
             const triageLoading = document.getElementById('triage-loading');

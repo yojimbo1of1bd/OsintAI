@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visual Intelligence Map — {{ case.name }}</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/static/style.css">
+    
+    <!-- Leaflet for maps -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+    
+    <!-- Vis-network for relationship graph -->
+    <script type="text/javascript" src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+
+    <style>
+        .map-dashboard {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            grid-template-rows: auto auto;
+            gap: 1rem;
+            padding: 1rem;
+            height: calc(100vh - 60px); /* subtract navbar */
+        }
+        
+        .map-panel {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        
+        .map-panel__header {
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid var(--border);
+            background: var(--bg-alt);
+            font-weight: 600;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .map-panel__content {
+            flex: 1;
+            overflow-y: auto;
+            position: relative;
+        }
+
+        #leaflet-map {
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+        
+        #network-graph {
+            width: 100%;
+            height: 100%;
+        }
+
+        .timeline {
+            padding: 1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+        
+        .timeline-item {
+            display: flex;
+            gap: 1rem;
+        }
+        
+        .timeline-marker {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: var(--primary);
+            margin-top: 0.25rem;
+            flex-shrink: 0;
+            position: relative;
+        }
+        
+        .timeline-marker::after {
+            content: '';
+            position: absolute;
+            top: 12px;
+            bottom: -1rem;
+            left: 5px;
+            width: 2px;
+            background: var(--border);
+        }
+        
+        .timeline-item:last-child .timeline-marker::after {
+            display: none;
+        }
+        
+        .timeline-content {
+            background: var(--bg-alt);
+            padding: 0.75rem;
+            border-radius: var(--radius);
+            flex: 1;
+        }
+        
+        .social-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 0.5rem;
+            padding: 1rem;
+        }
+        
+        .social-card {
+            background: var(--bg-alt);
+            padding: 0.75rem;
+            border-radius: var(--radius);
+            border: 1px solid var(--border);
+            text-align: center;
+            word-break: break-all;
+        }
+        
+        .social-card.verified {
+            border-color: var(--success);
+            background: rgba(16, 185, 129, 0.05);
+        }
+        
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <a href="/" class="navbar__brand">
+            <span class="navbar__icon">&#9733;</span>
+            <span class="navbar__title">Lodestar</span>
+        </a>
+        <div class="navbar__links">
+            <a href="/cases" class="navbar__link">Cases</a>
+            <a href="/cases/{{ case.id }}" class="navbar__link">{{ case.name }}</a>
+            <span class="navbar__link navbar__link--active">&gt; Visual Map</span>
+        </div>
+    </nav>
+
+    <div class="map-dashboard">
+        
+        <!-- Top Left: Relationship Graph -->
+        <div class="map-panel">
+            <div class="map-panel__header">
+                Network Graph
+            </div>
+            <div class="map-panel__content" id="network-graph">
+                <!-- Vis network injected here -->
+            </div>
+        </div>
+
+        <!-- Top Right: Location Map -->
+        <div class="map-panel">
+            <div class="map-panel__header">
+                Last Known Locations
+            </div>
+            <div class="map-panel__content" id="leaflet-map">
+                <!-- Leaflet injected here -->
+            </div>
+        </div>
+
+        <!-- Bottom Left: Social Handles -->
+        <div class="map-panel">
+            <div class="map-panel__header">
+                Social Footprint
+            </div>
+            <div class="map-panel__content">
+                <div class="social-grid">
+                    {% if social_handles %}
+                        {% for handle in social_handles %}
+                        <div class="social-card {% if handle.verified %}verified{% endif %}">
+                            <div style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;">{{ handle.platform }}</div>
+                            <div style="font-weight: 600; margin: 0.25rem 0;">{{ handle.handle }}</div>
+                            <div style="font-size: 0.7rem; color: {% if handle.verified %}var(--success){% else %}var(--warning){% endif %};">
+                                {% if handle.verified %}✓ Verified{% else %}? Unverified{% endif %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <p style="padding: 1rem; color: var(--text-muted);">No social handles identified yet.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Bottom Right: Timeline -->
+        <div class="map-panel">
+            <div class="map-panel__header">
+                Chronological Timeline
+            </div>
+            <div class="map-panel__content">
+                <div class="timeline">
+                    {% if context and context.life_events %}
+                        <div class="timeline-item">
+                            <div class="timeline-marker"></div>
+                            <div class="timeline-content">
+                                <div style="font-weight: 600;">Seeded Life Events</div>
+                                <div style="font-size: 0.9rem; margin-top: 0.25rem;">{{ context.life_events }}</div>
+                            </div>
+                        </div>
+                    {% endif %}
+                    
+                    {% for finding in findings %}
+                        {% if finding.category == "Timeline" or finding.category == "Location" %}
+                        <div class="timeline-item">
+                            <div class="timeline-marker"></div>
+                            <div class="timeline-content">
+                                <div style="font-size: 0.75rem; color: var(--text-muted);">{{ finding.added_at.strftime('%Y-%m-%d %H:%M') }}</div>
+                                <div style="font-weight: 600;">{{ finding.category }}</div>
+                                <div style="font-size: 0.9rem; margin-top: 0.25rem;">{{ finding.value }}</div>
+                                {% if finding.notes %}<div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.25rem;">{{ finding.notes }}</div>{% endif %}
+                            </div>
+                        </div>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if not (context and context.life_events) and not findings %}
+                        <p style="color: var(--text-muted);">No timeline events recorded.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Data Injection for Scripts -->
+    <script>
+        const caseName = "{{ case.name }}";
+        const rawLocations = {{ locations | tojson | safe }};
+        
+        // Prepare Network Data
+        const nodesData = [
+            { id: 0, label: "{{ case.name }}\n(Subject)", shape: "box", color: { background: "#4f46e5", border: "#3730a3" }, font: { color: "#ffffff" } }
+        ];
+        const edgesData = [];
+        
+        {% for r in relationships %}
+            nodesData.push({ id: {{ r.id }}, label: "{{ r.target_name }}", shape: "box", color: { background: "#1e293b", border: "#334155" }, font: { color: "#f8fafc" } });
+            edgesData.push({ from: 0, to: {{ r.id }}, label: "{{ r.relationship_type }}", color: "#64748b", font: { align: "middle", color: "#94a3b8", size: 10 } });
+        {% endfor %}
+        
+        // Initialize Map
+        document.addEventListener('DOMContentLoaded', () => {
+            // Leaflet Map Initialization
+            let defaultLat = 39.8283;
+            let defaultLng = -98.5795;
+            let defaultZoom = 4; // US Center default
+            
+            const validLocs = rawLocations.filter(loc => loc.lat !== null && loc.lng !== null);
+            if (validLocs.length > 0) {
+                defaultLat = validLocs[0].lat;
+                defaultLng = validLocs[0].lng;
+                defaultZoom = 12;
+            }
+
+            const map = L.map('leaflet-map').setView([defaultLat, defaultLng], defaultZoom);
+            
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; OpenStreetMap contributors',
+                className: 'map-tiles'
+            }).addTo(map);
+
+            validLocs.forEach(loc => {
+                L.marker([loc.lat, loc.lng]).addTo(map)
+                    .bindPopup(`<b>${loc.name}</b><br/>${loc.date}`);
+            });
+            
+            // Network Graph Initialization
+            const container = document.getElementById('network-graph');
+            const data = {
+                nodes: new vis.DataSet(nodesData),
+                edges: new vis.DataSet(edgesData)
+            };
+            const options = {
+                nodes: {
+                    borderWidth: 1,
+                    shadow: true
+                },
+                edges: {
+                    width: 1,
+                    shadow: true,
+                    smooth: {
+                        type: 'continuous'
+                    }
+                },
+                physics: {
+                    enabled: true,
+                    barnesHut: {
+                        gravitationalConstant: -2000,
+                        centralGravity: 0.3,
+                        springLength: 150,
+                        springConstant: 0.04
+                    }
+                }
+            };
+            new vis.Network(container, data, options);
+        });
+    </script>
+</body>
+</html>

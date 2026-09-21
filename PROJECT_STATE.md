@@ -8,10 +8,7 @@ Windows-local, passive-OSINT case assistant for Trace-Labs-style missing-persons
 ## Hard scope (full version in DESIGN_AND_SCOPE.md §2)
 - Passive collection only. No contact, no auth/CAPTCHA bypass, no dark-web automation, no scraping ToS-restricted platforms.
 - Every finding needs a source URL.
-- Custom scripts run only from `scripts/`, only with explicit confirm + logging.
-
-## Current phase
-Phase 1 through 11 — COMPLETE ✓
+Phase 1 through 16 — COMPLETE ✓
 
 ## Files that exist
 ```
@@ -28,9 +25,17 @@ app/routes/relationships.py — routes for relationship mapper
 app/routes/triage.py  — routes for LLM triage assistant
 app/routes/exporter.py — routes for exporting case data (CSV, TXT)
 app/routes/scripts.py — routes for running custom scripts
+app/routes/context.py — routes for case context intake (Phase 12)
+app/routes/map.py     — routes for visual intelligence map (Phase 13)
+app/routes/chat.py    — routes for interactive AI assistant (Phase 14)
+app/routes/pipeline.py — routes for background auto-OSINT orchestration (Phase 15)
+app/pipeline.py       — core auto-OSINT pipeline logic (Phase 15)
 templates/index.html  — dark-themed landing page
 templates/cases.html  — case list and creation UI
-templates/case_detail.html — specific case and findings UI
+templates/case_detail.html — specific case and findings UI (updated w/ Pipeline modal)
+templates/context_intake.html — form for seeding case context (Phase 12)
+templates/case_map.html — visual intelligence map dashboard (Phase 13)
+templates/case_chat.html — interactive LLM chat interface (Phase 14)
 static/style.css      — design system (CSS custom properties, dark mode)
 data/.gitkeep         — placeholder (DB files gitignored)
 data/images/          — directory for local image storage
@@ -43,15 +48,16 @@ README.md             — documentation and quickstart (Phase 11)
 docs/.gitkeep         — placeholder for documentation
 docs/screenshot_home.png — UI screenshot for README
 docs/screenshot_cases.png — UI screenshot for README
-requirements.txt      — pinned deps (fastapi, uvicorn, sqlalchemy, jinja2, python-multipart, exifread, Pillow, maigret, httpx, cryptography)
+requirements.txt      — pinned deps (fastapi, uvicorn, sqlalchemy, jinja2, python-multipart, exifread, Pillow, maigret, httpx, cryptography, pytest)
 .gitignore            — excludes .venv/, data/*.db, data/images/*, __pycache__/, lodestar.key
 ```
 
 ## Last session summary
-Verified and completed Phase 11 (Polish & Documentation). Folded `DESIGN_AND_SCOPE.md` into a comprehensive `README.md` with a Quickstart guide. Pinned all dependencies in `requirements.txt` via pip freeze. Used Playwright headless testing to capture UI screenshots for the documentation. Lodestar is now fully documented and ready for a zero-config cold start on Windows.
+Completed Phase 16 (Integration Polish & Tests). Added test suite (`pytest`), verified CRUD operations, edge cases, and pipeline behavior, and updated README with documentation and screenshots.
 
-## Next step
-Project is complete! Any further phases will require updating the BUILD_PLAN.md.
+## Current Phase
+**Current Phase:** Phase 16 complete. All phases in BUILD_PLAN.md are finished.
+**Status:** The test suite is passing, the workflow UI has been updated to reflect the new pipeline/LLM assistant features, and the README has been updated. The full Lodestar framework is now operational.
 
 ## Known bugs / open questions
-- Favicon 404 (cosmetic — no favicon.ico yet, will add in polish phase)
+- Favicon 404 (cosmetic — no favicon.ico yet)

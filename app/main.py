@@ -21,6 +21,10 @@ from app.routes.relationships import router as relationships_router
 from app.routes.triage import router as triage_router
 from app.routes.exporter import router as exporter_router
 from app.routes.scripts import router as scripts_router
+from app.routes.context import router as context_router
+from app.routes.map import router as map_router
+from app.routes.chat import router as chat_router
+from app.routes.pipeline import router as pipeline_router
 
 # ---------------------------------------------------------------------------
 # App setup
@@ -81,6 +85,10 @@ app.include_router(relationships_router)
 app.include_router(triage_router)
 app.include_router(exporter_router)
 app.include_router(scripts_router)
+app.include_router(context_router)
+app.include_router(map_router)
+app.include_router(chat_router)
+app.include_router(pipeline_router)
 
 
 
