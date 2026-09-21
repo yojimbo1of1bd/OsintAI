@@ -11,7 +11,7 @@ Windows-local, passive-OSINT case assistant for Trace-Labs-style missing-persons
 - Custom scripts run only from `scripts/`, only with explicit confirm + logging.
 
 ## Current phase
-Phase 1, 2, 3, 4, 5, 6 & 7 — COMPLETE ✓
+Phase 1, 2, 3, 4, 5, 6, 7 & 8 — COMPLETE ✓
 
 ## Files that exist
 ```
@@ -26,6 +26,7 @@ app/routes/images.py  — routes for image uploads and EXIF extraction
 app/routes/relationships.py — routes for relationship mapper
 app/routes/triage.py  — routes for LLM triage assistant
 app/routes/exporter.py — routes for exporting case data (CSV, TXT)
+app/routes/scripts.py — routes for running custom scripts
 templates/index.html  — dark-themed landing page
 templates/cases.html  — case list and creation UI
 templates/case_detail.html — specific case and findings UI
@@ -39,10 +40,10 @@ requirements.txt      — pinned deps (fastapi, uvicorn, sqlalchemy, jinja2, pyt
 ```
 
 ## Last session summary
-Verified and completed Phase 7 (Exporter). Created the `app/routes/exporter.py` router with two new endpoints for dumping a specific case's findings and relationships to either CSV or plain text format. Added download links for both exports to the header of the `case_detail.html` template. Ensured missing source URLs are flagged in the output data.
+Verified and completed Phase 8 (Custom Script Runner). Created `app/routes/scripts.py` to handle background execution of user scripts from the `scripts/` folder via `subprocess.Popen`. Standard output and error are piped to unique per-run log files in `data/logs/`. Added a secure endpoint to view log contents and updated `case_detail.html` to display a dropdown of available scripts and a list of clickable log files. All script runs require explicit confirmation and an active case status.
 
 ## Next step
-Phase 8 per BUILD_PLAN.md: Final Polish & Script Loader — read local python scripts from `scripts/`, provide UI button to run them on the current case id.
+Phase 9 per BUILD_PLAN.md: Encryption & Leak-Proofing — SQLCipher or Fernet for the DB, verify 127.0.0.1 binding, secure delete.
 
 ## Known bugs / open questions
 - Favicon 404 (cosmetic — no favicon.ico yet, will add in polish phase)

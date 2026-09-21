@@ -251,6 +251,43 @@
                 </div>
             </div>
         </section>
+        <!-- Custom Script Runner -->
+        <section class="card card--form fade-in-up fade-in-up-delay-2" style="margin-top: 1.5rem;">
+            <h2 class="card__title">Custom Script Runner</h2>
+            <div class="form">
+                {% if available_scripts %}
+                <form action="/cases/{{ case.id }}/scripts/run" method="post" onsubmit="return confirm('Are you sure you want to run this script? Scripts execute in the background with full access to your environment.');">
+                    <div style="display: flex; gap: 1rem; align-items: flex-end;">
+                        <div class="form__group" style="flex: 1; margin-bottom: 0;">
+                            <label for="script_name" class="form__label">Select Script (from scripts/ folder)</label>
+                            <select id="script_name" name="script_name" class="form__input" required>
+                                <option value="" disabled selected>Choose a script...</option>
+                                {% for script in available_scripts %}
+                                <option value="{{ script }}">{{ script }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <button type="submit" class="btn btn--primary" style="background-color: var(--danger);">Run Script</button>
+                    </div>
+                </form>
+                {% else %}
+                <p class="text-muted" style="margin-top: 0.5rem; font-size: 0.85rem;">No custom scripts found. Add .py, .sh, or .bat scripts to the <code>scripts/</code> directory to run them here.</p>
+                {% endif %}
+                
+                {% if case_logs %}
+                <div style="margin-top: 1.5rem;">
+                    <h3 style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.05em;">Recent Run Logs</h3>
+                    <ul style="list-style: none; padding: 0; margin: 0; font-size: 0.85rem;">
+                        {% for log in case_logs %}
+                        <li style="margin-bottom: 0.25rem;">
+                            <a href="/cases/{{ case.id }}/scripts/logs/{{ log }}" target="_blank" class="finding-source">📄 {{ log }}</a>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                {% endif %}
+            </div>
+        </section>
         {% endif %}
 
         <!-- Findings list -->

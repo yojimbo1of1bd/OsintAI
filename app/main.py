@@ -20,6 +20,7 @@ from app.routes.images import router as images_router
 from app.routes.relationships import router as relationships_router
 from app.routes.triage import router as triage_router
 from app.routes.exporter import router as exporter_router
+from app.routes.scripts import router as scripts_router
 
 # ---------------------------------------------------------------------------
 # App setup
@@ -67,6 +68,7 @@ app.include_router(images_router)
 app.include_router(relationships_router)
 app.include_router(triage_router)
 app.include_router(exporter_router)
+app.include_router(scripts_router)
 
 
 

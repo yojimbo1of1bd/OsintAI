@@ -54,10 +54,27 @@ async def case_detail(request: Request, case_id: int, db: Session = Depends(get_
     if not case:
         raise HTTPException(status_code=404, detail="Case not found")
         
+    # Get available scripts
+    scripts_dir = os.path.join(BASE_DIR, "scripts")
+    available_scripts = []
+    if os.path.exists(scripts_dir):
+        available_scripts = [f for f in os.listdir(scripts_dir) if f.endswith(".py") or f.endswith(".sh") or f.endswith(".bat")]
+        
+    # Get run logs for this case
+    logs_dir = os.path.join(BASE_DIR, "data", "logs")
+    case_logs = []
+    if os.path.exists(logs_dir):
+        prefix = f"case_{case_id}_"
+        case_logs = sorted([f for f in os.listdir(logs_dir) if f.startswith(prefix)], reverse=True)
+        
     return templates.TemplateResponse(
         request=request,
         name="case_detail.html",
-        context={"case": case},
+        context={
+            "case": case,
+            "available_scripts": available_scripts,
+            "case_logs": case_logs
+        },
     )
 
 
