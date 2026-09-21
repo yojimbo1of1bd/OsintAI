@@ -6,8 +6,9 @@ Data model from DESIGN_AND_SCOPE.md §6:
 """
 
 from datetime import datetime, timezone
-from sqlalchemy import Column, Integer, String, Text, DateTime, Boolean, ForeignKey
-from sqlalchemy.orm import relationship
+from typing import List, Optional
+from sqlalchemy import String, Text, DateTime, Boolean, ForeignKey
+from sqlalchemy.orm import relationship, Mapped, mapped_column
 from app.database import Base
 
 
@@ -25,15 +26,15 @@ class Case(Base):
     """
     __tablename__ = "cases"
 
-    id         = Column(Integer, primary_key=True, index=True)
-    name       = Column(String(255), nullable=False)
-    status     = Column(String(20), nullable=False, default="active")  # active | paused | stopped
-    created_at = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
-    notes      = Column(Text, nullable=True, default="")
+    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    status: Mapped[str] = mapped_column(String(20), nullable=False, default="active")  # active | paused | stopped
+    created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
+    notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True, default="")
 
-    findings   = relationship("Finding", back_populates="case", cascade="all, delete-orphan")
-    images     = relationship("Image", back_populates="case", cascade="all, delete-orphan")
-    relationships = relationship("Relationship", back_populates="case", cascade="all, delete-orphan")
+    findings: Mapped[List["Finding"]] = relationship(back_populates="case", cascade="all, delete-orphan")
+    images: Mapped[List["Image"]] = relationship(back_populates="case", cascade="all, delete-orphan")
+    relationships: Mapped[List["Relationship"]] = relationship(back_populates="case", cascade="all, delete-orphan")
 
 
 class Finding(Base):
@@ -44,42 +45,42 @@ class Finding(Base):
     """
     __tablename__ = "findings"
 
-    id         = Column(Integer, primary_key=True, index=True)
-    case_id    = Column(Integer, ForeignKey("cases.id"), nullable=False, index=True)
-    category   = Column(String(100), nullable=False)
-    value      = Column(String(500), nullable=False)
-    source_url = Column(Text, nullable=False)
-    notes      = Column(Text, nullable=True, default="")
-    verified   = Column(Boolean, nullable=False, default=True)
-    added_at   = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
+    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    case_id: Mapped[int] = mapped_column(ForeignKey("cases.id"), nullable=False, index=True)
+    category: Mapped[str] = mapped_column(String(100), nullable=False)
+    value: Mapped[str] = mapped_column(String(500), nullable=False)
+    source_url: Mapped[str] = mapped_column(Text, nullable=False)
+    notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True, default="")
+    verified: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    added_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
 
-    case       = relationship("Case", back_populates="findings")
+    case: Mapped["Case"] = relationship(back_populates="findings")
 
 
 class Image(Base):
     """An imported image with metadata."""
     __tablename__ = "images"
 
-    id          = Column(Integer, primary_key=True, index=True)
-    case_id     = Column(Integer, ForeignKey("cases.id"), nullable=False, index=True)
-    path        = Column(String(500), nullable=False)
-    source_url  = Column(Text, nullable=False)
-    exif_json   = Column(Text, nullable=True, default="{}")
-    imported_at = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
+    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    case_id: Mapped[int] = mapped_column(ForeignKey("cases.id"), nullable=False, index=True)
+    path: Mapped[str] = mapped_column(String(500), nullable=False)
+    source_url: Mapped[str] = mapped_column(Text, nullable=False)
+    exif_json: Mapped[Optional[str]] = mapped_column(Text, nullable=True, default="{}")
+    imported_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
 
-    case        = relationship("Case", back_populates="images")
+    case: Mapped["Case"] = relationship(back_populates="images")
 
 
 class Relationship(Base):
     """A discovered relationship between two entities."""
     __tablename__ = "relationships"
 
-    id          = Column(Integer, primary_key=True, index=True)
-    case_id     = Column(Integer, ForeignKey("cases.id"), nullable=False, index=True)
-    person_a    = Column(String(255), nullable=False)
-    relation    = Column(String(100), nullable=False)
-    person_b    = Column(String(255), nullable=False)
-    source_url  = Column(Text, nullable=False)
-    added_at    = Column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
+    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    case_id: Mapped[int] = mapped_column(ForeignKey("cases.id"), nullable=False, index=True)
+    person_a: Mapped[str] = mapped_column(String(255), nullable=False)
+    relation: Mapped[str] = mapped_column(String(100), nullable=False)
+    person_b: Mapped[str] = mapped_column(String(255), nullable=False)
+    source_url: Mapped[str] = mapped_column(Text, nullable=False)
+    added_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, default=lambda: datetime.now(timezone.utc))
 
-    case        = relationship("Case", back_populates="relationships")
+    case: Mapped["Case"] = relationship(back_populates="relationships")

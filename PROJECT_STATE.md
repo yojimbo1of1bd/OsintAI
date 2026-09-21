@@ -11,7 +11,7 @@ Windows-local, passive-OSINT case assistant for Trace-Labs-style missing-persons
 - Custom scripts run only from `scripts/`, only with explicit confirm + logging.
 
 ## Current phase
-Phase 1, 2, 3, 4, 5, & 6 — COMPLETE ✓
+Phase 1, 2, 3, 4, 5, 6 & 7 — COMPLETE ✓
 
 ## Files that exist
 ```
@@ -25,6 +25,7 @@ app/routes/findings.py — routes for finding management
 app/routes/images.py  — routes for image uploads and EXIF extraction
 app/routes/relationships.py — routes for relationship mapper
 app/routes/triage.py  — routes for LLM triage assistant
+app/routes/exporter.py — routes for exporting case data (CSV, TXT)
 templates/index.html  — dark-themed landing page
 templates/cases.html  — case list and creation UI
 templates/case_detail.html — specific case and findings UI
@@ -38,10 +39,10 @@ requirements.txt      — pinned deps (fastapi, uvicorn, sqlalchemy, jinja2, pyt
 ```
 
 ## Last session summary
-Verified and completed Phase 6 (LLM Triage Assistant). Installed `httpx` and created the `app/routes/triage.py` router to fetch the case findings and relationships and build a prompt for a local Ollama LLM. Updated `case_detail.html` with an input form for selecting the model, and hooked it up using an asynchronous JS `fetch()` call to display a generated report summary in the browser without reloading the page.
+Verified and completed Phase 7 (Exporter). Created the `app/routes/exporter.py` router with two new endpoints for dumping a specific case's findings and relationships to either CSV or plain text format. Added download links for both exports to the header of the `case_detail.html` template. Ensured missing source URLs are flagged in the output data.
 
 ## Next step
-Phase 7 per BUILD_PLAN.md: Exporter — route that dumps `{category, value, source_url, explanation}` per finding to CSV and plain text.
+Phase 8 per BUILD_PLAN.md: Final Polish & Script Loader — read local python scripts from `scripts/`, provide UI button to run them on the current case id.
 
 ## Known bugs / open questions
 - Favicon 404 (cosmetic — no favicon.ico yet, will add in polish phase)

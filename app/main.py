@@ -11,6 +11,7 @@ from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 import os
+from contextlib import asynccontextmanager
 
 from app.database import init_db
 from app.routes.cases import router as cases_router
@@ -18,15 +19,24 @@ from app.routes.findings import router as findings_router
 from app.routes.images import router as images_router
 from app.routes.relationships import router as relationships_router
 from app.routes.triage import router as triage_router
+from app.routes.exporter import router as exporter_router
 
 # ---------------------------------------------------------------------------
 # App setup
 # ---------------------------------------------------------------------------
 
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup: create tables
+    init_db()
+    yield
+    # Shutdown logic can go here
+
 app = FastAPI(
     title="Lodestar",
     description="Passive-OSINT case assistant for missing-persons CTF work.",
     version="0.1.0",
+    lifespan=lifespan,
 )
 
 # Resolve paths relative to the project root
@@ -56,15 +66,9 @@ app.include_router(findings_router)
 app.include_router(images_router)
 app.include_router(relationships_router)
 app.include_router(triage_router)
+app.include_router(exporter_router)
 
 
-# ---------------------------------------------------------------------------
-# Startup — create tables on first run
-# ---------------------------------------------------------------------------
-
-@app.on_event("startup")
-def on_startup():
-    init_db()
 
 
 # ---------------------------------------------------------------------------

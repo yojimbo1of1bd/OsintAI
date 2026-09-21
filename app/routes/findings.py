@@ -12,6 +12,7 @@ Routes:
 from fastapi import APIRouter, Depends, Request, Form, HTTPException
 from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
+import logging
 
 from app.database import get_db
 from app.models import Case, Finding
@@ -41,8 +42,14 @@ async def create_finding(
         notes=notes.strip(),
         verified=True  # Manual entries are considered verified by the user
     )
-    db.add(finding)
-    db.commit()
+    
+    try:
+        db.add(finding)
+        db.commit()
+    except Exception as e:
+        db.rollback()
+        logging.error(f"Error creating finding: {e}")
+        raise HTTPException(status_code=500, detail="Database error occurred while creating finding.")
     
     return RedirectResponse(url=f"/cases/{case_id}", status_code=303)
 
@@ -61,8 +68,13 @@ async def delete_finding(
     ).first()
     
     if finding:
-        db.delete(finding)
-        db.commit()
+        try:
+            db.delete(finding)
+            db.commit()
+        except Exception as e:
+            db.rollback()
+            logging.error(f"Error deleting finding {finding_id}: {e}")
+            raise HTTPException(status_code=500, detail="Database error occurred while deleting finding.")
         
     return RedirectResponse(url=f"/cases/{case_id}", status_code=303)
 
@@ -96,7 +108,12 @@ async def verify_finding(
     ).first()
     
     if finding and not finding.verified:
-        finding.verified = True
-        db.commit()
+        try:
+            finding.verified = True
+            db.commit()
+        except Exception as e:
+            db.rollback()
+            logging.error(f"Error verifying finding {finding_id}: {e}")
+            raise HTTPException(status_code=500, detail="Database error occurred while verifying finding.")
         
     return RedirectResponse(url=f"/cases/{case_id}", status_code=303)

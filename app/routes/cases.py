@@ -19,6 +19,7 @@ from fastapi.responses import RedirectResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 import os
+import logging
 
 from app.database import get_db
 from app.models import Case, Finding
@@ -71,9 +72,15 @@ async def create_case(
     db: Session = Depends(get_db),
 ):
     """Create a new case with status='active'."""
-    case = Case(name=name.strip(), notes=notes.strip())
-    db.add(case)
-    db.commit()
+    try:
+        case = Case(name=name.strip(), notes=notes.strip())
+        db.add(case)
+        db.commit()
+    except Exception as e:
+        db.rollback()
+        logging.error(f"Error creating case: {e}")
+        raise HTTPException(status_code=500, detail="Database error occurred while creating case.")
+        
     return RedirectResponse(url="/cases", status_code=303)
 
 
@@ -82,9 +89,15 @@ async def pause_case(case_id: int, db: Session = Depends(get_db)):
     """Pause an active case."""
     case = db.query(Case).filter(Case.id == case_id).first()
     if case and case.status == "active":
-        case.status = "paused"
-        db.commit()
-        cancel_scan(case_id)
+        try:
+            case.status = "paused"
+            db.commit()
+            cancel_scan(case_id)
+        except Exception as e:
+            db.rollback()
+            logging.error(f"Error pausing case {case_id}: {e}")
+            raise HTTPException(status_code=500, detail="Database error occurred while pausing case.")
+            
     return RedirectResponse(url="/cases", status_code=303)
 
 
@@ -93,8 +106,14 @@ async def resume_case(case_id: int, db: Session = Depends(get_db)):
     """Resume a paused case back to active."""
     case = db.query(Case).filter(Case.id == case_id).first()
     if case and case.status == "paused":
-        case.status = "active"
-        db.commit()
+        try:
+            case.status = "active"
+            db.commit()
+        except Exception as e:
+            db.rollback()
+            logging.error(f"Error resuming case {case_id}: {e}")
+            raise HTTPException(status_code=500, detail="Database error occurred while resuming case.")
+            
     return RedirectResponse(url="/cases", status_code=303)
 
 
@@ -103,9 +122,15 @@ async def stop_case(case_id: int, db: Session = Depends(get_db)):
     """Stop a case (terminal — can only delete after this)."""
     case = db.query(Case).filter(Case.id == case_id).first()
     if case and case.status in ("active", "paused"):
-        case.status = "stopped"
-        db.commit()
-        cancel_scan(case_id)
+        try:
+            case.status = "stopped"
+            db.commit()
+            cancel_scan(case_id)
+        except Exception as e:
+            db.rollback()
+            logging.error(f"Error stopping case {case_id}: {e}")
+            raise HTTPException(status_code=500, detail="Database error occurred while stopping case.")
+            
     return RedirectResponse(url="/cases", status_code=303)
 
 
@@ -114,6 +139,12 @@ async def delete_case(case_id: int, db: Session = Depends(get_db)):
     """Permanently delete a case."""
     case = db.query(Case).filter(Case.id == case_id).first()
     if case:
-        db.delete(case)
-        db.commit()
+        try:
+            db.delete(case)
+            db.commit()
+        except Exception as e:
+            db.rollback()
+            logging.error(f"Error deleting case {case_id}: {e}")
+            raise HTTPException(status_code=500, detail="Database error occurred while deleting case.")
+            
     return RedirectResponse(url="/cases", status_code=303)

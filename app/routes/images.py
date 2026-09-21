@@ -5,6 +5,7 @@ import exifread
 from fastapi import APIRouter, Depends, Form, UploadFile, File, HTTPException
 from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
+import logging
 
 from app.database import get_db
 from app.models import Case, Image
@@ -53,8 +54,20 @@ async def upload_image(
         source_url=source_url.strip(),
         exif_json=exif_json
     )
-    db.add(db_image)
-    db.commit()
+    
+    try:
+        db.add(db_image)
+        db.commit()
+    except Exception as e:
+        db.rollback()
+        logging.error(f"Error saving image record to database: {e}")
+        # Try to clean up the orphaned file
+        if os.path.exists(file_path):
+            try:
+                os.remove(file_path)
+            except Exception:
+                pass
+        raise HTTPException(status_code=500, detail="Database error occurred while saving image.")
     
     return RedirectResponse(url=f"/cases/{case_id}", status_code=303)
 
@@ -70,12 +83,17 @@ async def delete_image(
     ).first()
     
     if image:
-        db.delete(image)
-        db.commit()
-        if os.path.exists(image.path):
-            try:
-                os.remove(image.path)
-            except Exception:
-                pass
+        try:
+            db.delete(image)
+            db.commit()
+            if os.path.exists(image.path):
+                try:
+                    os.remove(image.path)
+                except Exception:
+                    pass
+        except Exception as e:
+            db.rollback()
+            logging.error(f"Error deleting image {image_id}: {e}")
+            raise HTTPException(status_code=500, detail="Database error occurred while deleting image.")
                 
     return RedirectResponse(url=f"/cases/{case_id}", status_code=303)

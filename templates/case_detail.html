@@ -89,6 +89,10 @@
                         Created {{ case.created_at.strftime('%b %d, %Y') }}
                     </p>
                 </div>
+                <div style="display: flex; gap: 0.5rem;">
+                    <a href="/cases/{{ case.id }}/export/csv" class="btn btn--outline" download>Export CSV</a>
+                    <a href="/cases/{{ case.id }}/export/txt" class="btn btn--outline" download>Export TXT</a>
+                </div>
             </div>
             {% if case.notes %}
             <div class="card" style="margin-top: 1rem; padding: 1rem;">

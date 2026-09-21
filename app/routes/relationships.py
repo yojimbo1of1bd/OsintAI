@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, Form, HTTPException
 from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
+import logging
 
 from app.database import get_db
 from app.models import Case, Relationship
@@ -28,9 +29,15 @@ async def create_relationship(
         person_b=person_b.strip(),
         source_url=source_url.strip()
     )
-    db.add(relationship)
-    db.commit()
     
+    try:
+        db.add(relationship)
+        db.commit()
+    except Exception as e:
+        db.rollback()
+        logging.error(f"Error creating relationship: {e}")
+        raise HTTPException(status_code=500, detail="Database error occurred while creating relationship.")
+        
     return RedirectResponse(url=f"/cases/{case_id}", status_code=303)
 
 
@@ -46,7 +53,12 @@ async def delete_relationship(
     ).first()
     
     if relationship:
-        db.delete(relationship)
-        db.commit()
-                
+        try:
+            db.delete(relationship)
+            db.commit()
+        except Exception as e:
+            db.rollback()
+            logging.error(f"Error deleting relationship {relationship_id}: {e}")
+            raise HTTPException(status_code=500, detail="Database error occurred while deleting relationship.")
+            
     return RedirectResponse(url=f"/cases/{case_id}", status_code=303)
