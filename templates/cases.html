@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Lodestar — Case Manager. Create and manage OSINT investigation cases.">
+    <title>Cases — Lodestar</title>
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+    <!-- Styles -->
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <!-- Top nav bar -->
+    <nav class="navbar">
+        <a href="/" class="navbar__brand">
+            <span class="navbar__icon">&#9733;</span>
+            <span class="navbar__title">Lodestar</span>
+        </a>
+        <div class="navbar__links">
+            <a href="/cases" class="navbar__link navbar__link--active">Cases</a>
+        </div>
+    </nav>
+
+    <div class="container page-content">
+        <!-- Page header -->
+        <header class="page-header fade-in-up">
+            <h1 class="page-header__title">Case Manager</h1>
+            <p class="page-header__subtitle">Create and manage OSINT investigation cases</p>
+        </header>
+
+        <!-- Create case form -->
+        <section class="card card--form fade-in-up fade-in-up-delay-1" id="create-case-section">
+            <h2 class="card__title">New Case</h2>
+            <form action="/cases/create" method="post" class="form" id="create-case-form">
+                <div class="form__group">
+                    <label for="case-name" class="form__label">Case Name</label>
+                    <input
+                        type="text"
+                        id="case-name"
+                        name="name"
+                        class="form__input"
+                        placeholder="e.g. John Doe — SLCTF 2026"
+                        required
+                        autocomplete="off"
+                    >
+                </div>
+                <div class="form__group">
+                    <label for="case-notes" class="form__label">Notes <span class="text-muted">(optional)</span></label>
+                    <textarea
+                        id="case-notes"
+                        name="notes"
+                        class="form__textarea"
+                        rows="3"
+                        placeholder="Initial notes, context, or links..."
+                    ></textarea>
+                </div>
+                <button type="submit" class="btn btn--primary" id="create-case-btn">
+                    Create Case
+                </button>
+            </form>
+        </section>
+
+        <!-- Case list -->
+        <section class="fade-in-up fade-in-up-delay-2" id="case-list-section">
+            <h2 class="section-title">
+                All Cases
+                <span class="badge">{{ cases | length }}</span>
+            </h2>
+
+            {% if cases %}
+            <div class="case-grid">
+                {% for case in cases %}
+                <div class="card case-card case-card--{{ case.status }}" id="case-{{ case.id }}">
+                    <div class="case-card__header">
+                        <h3 class="case-card__name">
+                            <a href="/cases/{{ case.id }}" class="case-card__link">{{ case.name }}</a>
+                        </h3>
+                        <span class="status-badge status-badge--{{ case.status }}">
+                            {{ case.status }}
+                        </span>
+                    </div>
+
+                    {% if case.notes %}
+                    <p class="case-card__notes">{{ case.notes }}</p>
+                    {% endif %}
+
+                    <div class="case-card__meta">
+                        <span class="case-card__date" title="{{ case.created_at }}">
+                            Created {{ case.created_at.strftime('%b %d, %Y &middot; %H:%M UTC') }}
+                        </span>
+                        <span class="case-card__id text-muted">#{{ case.id }}</span>
+                    </div>
+
+                    <div class="case-card__actions">
+                        {% if case.status == "active" %}
+                        <form action="/cases/{{ case.id }}/pause" method="post" class="inline-form">
+                            <button type="submit" class="btn btn--small btn--warning" title="Pause this case">
+                                ⏸ Pause
+                            </button>
+                        </form>
+                        <form action="/cases/{{ case.id }}/stop" method="post" class="inline-form">
+                            <button type="submit" class="btn btn--small btn--danger" title="Stop this case (terminal)">
+                                ⏹ Stop
+                            </button>
+                        </form>
+
+                        {% elif case.status == "paused" %}
+                        <form action="/cases/{{ case.id }}/resume" method="post" class="inline-form">
+                            <button type="submit" class="btn btn--small btn--success" title="Resume this case">
+                                ▶ Resume
+                            </button>
+                        </form>
+                        <form action="/cases/{{ case.id }}/stop" method="post" class="inline-form">
+                            <button type="submit" class="btn btn--small btn--danger" title="Stop this case (terminal)">
+                                ⏹ Stop
+                            </button>
+                        </form>
+
+                        {% elif case.status == "stopped" %}
+                        <span class="case-card__stopped-label text-muted">Case closed</span>
+                        {% endif %}
+
+                        <form action="/cases/{{ case.id }}/delete" method="post" class="inline-form inline-form--right"
+                              onsubmit="return confirm('Permanently delete case \'{{ case.name }}\'? This cannot be undone.')">
+                            <button type="submit" class="btn btn--small btn--ghost-danger" title="Delete permanently">
+                                🗑 Delete
+                            </button>
+                        </form>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            {% else %}
+            <div class="empty-state">
+                <div class="empty-state__icon">📂</div>
+                <p class="empty-state__text">No cases yet</p>
+                <p class="empty-state__hint text-muted">Create your first case above to get started.</p>
+            </div>
+            {% endif %}
+        </section>
+    </div>
+</body>
+</html>
