@@ -225,6 +225,28 @@
                 <button type="submit" class="btn btn--primary">Log Relationship</button>
             </form>
         </section>
+
+        <!-- LLM Triage Assistant -->
+        <section class="card card--form fade-in-up fade-in-up-delay-2" style="margin-top: 1.5rem;">
+            <h2 class="card__title">LLM Triage Assistant</h2>
+            <div class="form">
+                <div style="display: flex; gap: 1rem; align-items: flex-end;">
+                    <div class="form__group" style="flex: 1; margin-bottom: 0;">
+                        <label for="ollama_model" class="form__label">Ollama Model</label>
+                        <input type="text" id="ollama_model" name="ollama_model" class="form__input" value="qwen2.5:7b" required>
+                    </div>
+                    <button type="button" id="btn-triage" class="btn btn--primary">Generate Triage Report</button>
+                </div>
+                <p class="text-muted" style="margin-top: 0.5rem; font-size: 0.85rem;">Calls local Ollama to summarize current findings and flag missing info. This output is for review only and is not saved to the DB.</p>
+                
+                <div id="triage-loading" style="display: none; margin-top: 1rem; color: var(--primary);">
+                    <em>Generating report... this may take up to 30 seconds depending on your hardware.</em>
+                </div>
+                
+                <div id="triage-result" style="display: none; margin-top: 1rem; background: var(--bg-dark); padding: 1rem; border-radius: 4px; border: 1px solid var(--border); white-space: pre-wrap; font-size: 0.9rem;">
+                </div>
+            </div>
+        </section>
         {% endif %}
 
         <!-- Findings list -->
@@ -449,5 +471,54 @@
             {% endif %}
         </section>
     </div>
+
+    <!-- Triage Script -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const btnTriage = document.getElementById('btn-triage');
+            const triageLoading = document.getElementById('triage-loading');
+            const triageResult = document.getElementById('triage-result');
+            const ollamaModel = document.getElementById('ollama_model');
+            
+            if (btnTriage) {
+                btnTriage.addEventListener('click', async function() {
+                    const modelName = ollamaModel.value.trim();
+                    if (!modelName) return;
+                    
+                    btnTriage.disabled = true;
+                    triageLoading.style.display = 'block';
+                    triageResult.style.display = 'none';
+                    triageResult.textContent = '';
+                    
+                    try {
+                        const response = await fetch('/cases/{{ case.id }}/triage', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({ model: modelName })
+                        });
+                        
+                        const data = await response.json();
+                        
+                        if (data.error) {
+                            triageResult.textContent = `Error: ${data.error}`;
+                            triageResult.style.color = 'var(--danger)';
+                        } else if (data.summary) {
+                            triageResult.textContent = data.summary;
+                            triageResult.style.color = 'inherit';
+                        }
+                    } catch (error) {
+                        triageResult.textContent = `Error: ${error.message}`;
+                        triageResult.style.color = 'var(--danger)';
+                    } finally {
+                        btnTriage.disabled = false;
+                        triageLoading.style.display = 'none';
+                        triageResult.style.display = 'block';
+                    }
+                });
+            }
+        });
+    </script>
 </body>
 </html>

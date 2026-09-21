@@ -11,7 +11,7 @@ Windows-local, passive-OSINT case assistant for Trace-Labs-style missing-persons
 - Custom scripts run only from `scripts/`, only with explicit confirm + logging.
 
 ## Current phase
-Phase 1, 2, 3, 4, & 5 — COMPLETE ✓
+Phase 1, 2, 3, 4, 5, & 6 — COMPLETE ✓
 
 ## Files that exist
 ```
@@ -24,6 +24,7 @@ app/routes/cases.py   — routes for case management
 app/routes/findings.py — routes for finding management
 app/routes/images.py  — routes for image uploads and EXIF extraction
 app/routes/relationships.py — routes for relationship mapper
+app/routes/triage.py  — routes for LLM triage assistant
 templates/index.html  — dark-themed landing page
 templates/cases.html  — case list and creation UI
 templates/case_detail.html — specific case and findings UI
@@ -32,15 +33,15 @@ data/.gitkeep         — placeholder (DB files gitignored)
 data/images/          — directory for local image storage
 scripts/.gitkeep      — placeholder for custom scripts (Phase 8)
 docs/.gitkeep         — placeholder for documentation
-requirements.txt      — pinned deps (fastapi, uvicorn, sqlalchemy, jinja2, python-multipart, exifread, Pillow, maigret)
+requirements.txt      — pinned deps (fastapi, uvicorn, sqlalchemy, jinja2, python-multipart, exifread, Pillow, maigret, httpx)
 .gitignore            — excludes .venv/, data/*.db, data/images/*, __pycache__/
 ```
 
 ## Last session summary
-Verified and completed Phase 5 (Relationship Mapper). Implemented the `Relationship` SQLAlchemy model. Created the `app/routes/relationships.py` router to handle creation and deletion of relationships. Updated `case_detail.html` with an input form (enforcing source URLs), a tabular list view, and an interactive graph visualization using `vis-network`.
+Verified and completed Phase 6 (LLM Triage Assistant). Installed `httpx` and created the `app/routes/triage.py` router to fetch the case findings and relationships and build a prompt for a local Ollama LLM. Updated `case_detail.html` with an input form for selecting the model, and hooked it up using an asynchronous JS `fetch()` call to display a generated report summary in the browser without reloading the page.
 
 ## Next step
-Phase 6 per BUILD_PLAN.md: Data Export — JSON/CSV export of case findings/relationships.
+Phase 7 per BUILD_PLAN.md: Exporter — route that dumps `{category, value, source_url, explanation}` per finding to CSV and plain text.
 
 ## Known bugs / open questions
 - Favicon 404 (cosmetic — no favicon.ico yet, will add in polish phase)

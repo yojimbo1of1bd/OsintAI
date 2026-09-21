@@ -17,6 +17,7 @@ from app.routes.cases import router as cases_router
 from app.routes.findings import router as findings_router
 from app.routes.images import router as images_router
 from app.routes.relationships import router as relationships_router
+from app.routes.triage import router as triage_router
 
 # ---------------------------------------------------------------------------
 # App setup
@@ -54,6 +55,7 @@ app.include_router(cases_router)
 app.include_router(findings_router)
 app.include_router(images_router)
 app.include_router(relationships_router)
+app.include_router(triage_router)
 
 
 # ---------------------------------------------------------------------------
